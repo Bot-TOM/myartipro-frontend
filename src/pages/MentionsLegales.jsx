@@ -17,7 +17,7 @@ export default function MentionsLegales() {
           <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">1. Editeur du site</h2>
             <p>
-              <strong>PlombierPro</strong><br />
+              <strong>MyArtipro</strong><br />
               [Nom de votre entreprise ou votre nom complet]<br />
               [Adresse postale]<br />
               [Numero SIRET]<br />
@@ -41,7 +41,7 @@ export default function MentionsLegales() {
           <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">3. Protection des donnees personnelles (RGPD)</h2>
             <p>
-              PlombierPro collecte et traite des donnees personnelles dans le cadre de son activite :
+              MyArtipro collecte et traite des donnees personnelles dans le cadre de son activite :
               noms, emails, telephones et adresses de vos clients, ainsi que vos informations
               professionnelles (SIRET, entreprise).
             </p>
@@ -59,7 +59,7 @@ export default function MentionsLegales() {
           <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">4. Cookies</h2>
             <p>
-              PlombierPro utilise uniquement des cookies techniques necessaires au fonctionnement
+              MyArtipro utilise uniquement des cookies techniques necessaires au fonctionnement
               de l'application (session d'authentification). Aucun cookie publicitaire ou de tracking
               n'est utilise.
             </p>
@@ -76,8 +76,8 @@ export default function MentionsLegales() {
           <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">6. Responsabilite</h2>
             <p>
-              PlombierPro est un outil d'aide a la gestion. Les devis et factures generes par
-              l'application sont sous la responsabilite de l'utilisateur. PlombierPro ne peut etre
+              MyArtipro est un outil d'aide a la gestion. Les devis et factures generes par
+              l'application sont sous la responsabilite de l'utilisateur. MyArtipro ne peut etre
               tenu responsable d'erreurs dans les documents generes.
             </p>
           </section>

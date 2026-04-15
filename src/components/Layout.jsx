@@ -188,7 +188,7 @@ export default function Layout({ children }) {
             >
               <Menu size={20} />
             </button>
-            <h1 className="text-lg font-bold text-primary-600">PlombierPro</h1>
+            <h1 className="text-lg font-bold text-primary-600">MyArtipro</h1>
           </div>
           <NotifBell notifs={notifs} notifOpen={notifOpen} setNotifOpen={setNotifOpen} notifRef={notifRef} navigate={navigate} />
         </div>

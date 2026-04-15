@@ -42,7 +42,7 @@ export default function ResetPassword() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-primary-600">PlombierPro</h1>
+          <h1 className="text-3xl font-bold text-primary-600">MyArtipro</h1>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border p-6 sm:p-8 space-y-5">

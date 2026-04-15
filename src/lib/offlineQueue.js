@@ -1,6 +1,6 @@
 import { openDB } from 'idb'
 
-const DB_NAME = 'plombierpro-offline'
+const DB_NAME = 'myartipro-offline'
 const STORE_NAME = 'pending-requests'
 
 async function getDB() {

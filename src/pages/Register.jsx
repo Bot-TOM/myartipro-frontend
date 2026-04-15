@@ -76,8 +76,8 @@ export default function Register() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-8">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-primary-600">PlombierPro</h1>
-          <p className="text-gray-500 mt-2">Créez votre compte plombier</p>
+          <h1 className="text-3xl font-bold text-primary-600">MyArtipro</h1>
+          <p className="text-gray-500 mt-2">Créez votre compte artisan</p>
         </div>
 
         <form onSubmit={handleRegister} className="bg-white rounded-xl shadow-sm border p-6 sm:p-8 space-y-4">
