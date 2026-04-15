@@ -1,14 +1,15 @@
 export const PRESTATIONS_TYPES = [
-  'Débouchage canalisation',
-  "Réparation fuite d'eau",
-  'Installation chauffe-eau',
-  'Remplacement robinet',
-  'Installation sanitaire (WC, lavabo, douche)',
-  "Détartrage ballon d'eau chaude",
-  "Réparation chasse d'eau",
-  'Pose de tuyauterie',
-  'Recherche de fuite',
-  'Mise en conformité plomberie',
+  'Main d\'oeuvre',
+  'Fourniture de materiel',
+  'Deplacement',
+  'Installation',
+  'Reparation',
+  'Entretien / Maintenance',
+  'Diagnostic / Expertise',
+  'Mise en conformite',
+  'Depose / Demontage',
+  'Pose / Montage',
+  'Autre',
 ]
 
 export const CLIENT_STATUTS = [

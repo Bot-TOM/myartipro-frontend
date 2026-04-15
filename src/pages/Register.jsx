@@ -116,7 +116,7 @@ export default function Register() {
               type="text"
               value={form.entreprise}
               onChange={update('entreprise')}
-              placeholder="Ex: Plomberie Martin"
+              placeholder="Ex: Martin Services"
               className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-base"
             />
           </div>

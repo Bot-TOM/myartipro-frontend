@@ -58,7 +58,7 @@ export default function Devis() {
       }, 100)
       toast.success('PDF telecharge !')
     } catch (err) {
-      console.error('PDF download error:', err)
+      // erreur PDF silencieuse en prod
       // Si le serveur renvoie du JSON avec un detail d'erreur
       let msg = 'Erreur lors du telechargement du PDF'
       if (err.response?.data) {

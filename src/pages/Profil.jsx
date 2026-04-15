@@ -126,7 +126,7 @@ export default function Profil() {
               type="text"
               value={form.entreprise}
               onChange={updateField('entreprise')}
-              placeholder="Ex: Dupont Plomberie"
+              placeholder="Ex: Dupont Services"
               className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-base"
             />
           </div>

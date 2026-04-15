@@ -44,7 +44,7 @@ export default function Factures() {
       }, 100)
       toast.success('PDF telecharge !')
     } catch (err) {
-      console.error('PDF download error:', err)
+      // erreur PDF silencieuse en prod
       let msg = 'Erreur lors du telechargement du PDF'
       if (err.response?.data) {
         try {

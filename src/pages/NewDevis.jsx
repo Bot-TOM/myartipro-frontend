@@ -164,7 +164,7 @@ export default function NewDevis() {
               value={form.titre}
               onChange={(e) => setForm({ ...form, titre: e.target.value })}
               required
-              placeholder="Ex: Réparation fuite salle de bain"
+              placeholder="Ex: Travaux salle de bain"
               className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-base"
             />
           </div>
