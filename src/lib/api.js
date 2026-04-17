@@ -19,4 +19,13 @@ api.interceptors.request.use(async (config) => {
   return config
 })
 
+api.interceptors.response.use(
+  (r) => r,
+  (err) => {
+    // Log pour debug — visible dans DevTools console
+    console.error('[API]', err.config?.method?.toUpperCase(), err.config?.url, '→', err.message)
+    return Promise.reject(err)
+  }
+)
+
 export default api

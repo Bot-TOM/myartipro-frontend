@@ -8,34 +8,22 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  // Garantit l'existence du profil avant de débloquer l'app
-  const ensureProfile = async () => {
-    try {
-      await api.get('/auth/me')
-    } catch {
-      // Silencieux — token invalide ou backend indisponible
-    }
+  // Fire-and-forget : réveille Railway + auto-crée le profil sans bloquer l'app
+  const ensureProfile = () => {
+    api.get('/auth/me').catch(() => {})
   }
 
   useEffect(() => {
-    const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        await ensureProfile() // bloquant : profil garanti avant rendu
-      }
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
       setLoading(false)
-    }
-    init()
+      if (session?.user) ensureProfile()
+    })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        if (session?.user) {
-          await ensureProfile()
-        }
-        setUser(session?.user ?? null)
-      }
-    )
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+      if (session?.user) ensureProfile()
+    })
 
     return () => subscription.unsubscribe()
   }, [])
