@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
 import useAuth from '../lib/useAuth'
 import Layout from '../components/Layout'
 import StatusBadge from '../components/StatusBadge'
@@ -85,9 +84,13 @@ export default function Devis() {
 
   const handleDelete = async (devisId) => {
     if (!window.confirm('Supprimer ce devis ?')) return
-    await supabase.from('devis').delete().eq('id', devisId)
-    toast.success('Devis supprimé')
-    loadDevis()
+    try {
+      await api.delete(`/devis/${devisId}`)
+      toast.success('Devis supprimé')
+      loadDevis()
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Erreur lors de la suppression')
+    }
   }
 
   const handleConvertir = async (devisId) => {
@@ -260,7 +263,7 @@ export default function Devis() {
                         {confirmEnvoi === d.id ? 'Confirmer ?' : <Send size={18} />}
                       </button>
                     )}
-                    {(d.statut === 'envoyé' || d.statut === 'accepté' || d.statut === 'relancé') && (
+                    {(['envoyé', 'consulté', 'accepté', 'relancé'].includes(d.statut)) && (
                       <button onClick={() => handleConvertir(d.id)} className="p-2 text-gray-400 hover:text-green-600 rounded-lg" title="Convertir en facture">
                         <FileCheck size={18} />
                       </button>
@@ -341,7 +344,7 @@ export default function Devis() {
                             {confirmEnvoi === d.id ? 'Confirmer ?' : <Send size={16} />}
                           </button>
                         )}
-                        {(d.statut === 'envoyé' || d.statut === 'accepté' || d.statut === 'relancé') && (
+                        {(['envoyé', 'consulté', 'accepté', 'relancé'].includes(d.statut)) && (
                           <button onClick={() => handleConvertir(d.id)} title="Convertir en facture" className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition">
                             <FileCheck size={16} />
                           </button>
