@@ -7,7 +7,7 @@ export const API_URL = import.meta.env.VITE_API_URL || `${window.location.protoc
 const api = axios.create({
   baseURL: API_URL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 15000, // 15 secondes max
+  timeout: 30000, // 30s — tient compte du cold start Railway
 })
 
 api.interceptors.request.use(async (config) => {
