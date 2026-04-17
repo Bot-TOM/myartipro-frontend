@@ -21,6 +21,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user) return
     const load = async () => {
+      try {
       const today = new Date().toISOString().slice(0, 10)
       const now = new Date()
       const debutMois = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
@@ -92,6 +93,9 @@ export default function Dashboard() {
       })
 
       setLoading(false)
+      } catch {
+        setLoading(false)
+      }
     }
     load()
   }, [user])

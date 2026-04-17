@@ -176,7 +176,7 @@ export default function ClientDetail() {
             {devis.map((d) => (
               <div
                 key={d.id}
-                onClick={() => navigate(`/devis/${d.id}/modifier`)}
+                onClick={() => navigate(d.statut === 'brouillon' ? `/devis/${d.id}/modifier` : '/devis')}
                 className="px-5 py-3 flex items-center justify-between hover:bg-gray-50 cursor-pointer transition"
               >
                 <div>

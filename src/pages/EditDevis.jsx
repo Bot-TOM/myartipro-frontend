@@ -54,6 +54,13 @@ export default function EditDevis() {
       setClients(clientsRes.data || [])
 
       const devis = devisRes.data
+
+      if (devis.statut !== 'brouillon') {
+        toast.error('Ce devis ne peut plus être modifié')
+        navigate('/devis')
+        return
+      }
+
       setNumero(devis.numero)
       setForm({
         client_id: devis.client_id,

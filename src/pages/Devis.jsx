@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import useAuth from '../lib/useAuth'
+import api from '../lib/api'
 import Layout from '../components/Layout'
 import StatusBadge from '../components/StatusBadge'
-import api from '../lib/api'
 import toast from 'react-hot-toast'
 import { Plus, Send, Download, Trash2, Pencil, FileCheck, Clock, AlertTriangle, Zap } from 'lucide-react'
 
@@ -26,12 +26,12 @@ export default function Devis() {
 
   const loadDevis = async () => {
     setLoading(true)
-    const { data } = await supabase
-      .from('devis')
-      .select('*, clients(nom, prenom, email)')
-      .eq('user_id', user.id)
-      .order('date_creation', { ascending: false })
-    setDevisList(data || [])
+    try {
+      const { data } = await api.get('/devis')
+      setDevisList(data || [])
+    } catch {
+      toast.error('Erreur lors du chargement des devis')
+    }
     setLoading(false)
   }
 
