@@ -1,8 +1,9 @@
 import axios from 'axios'
 import { supabase } from './supabase'
 
-// Auto-detect: meme protocole + meme hostname, port 8000
-export const API_URL = import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:8000`
+export const API_URL =
+  import.meta.env.VITE_API_URL ||
+  'https://myartipro-backend-production.up.railway.app'
 
 const api = axios.create({
   baseURL: API_URL,
