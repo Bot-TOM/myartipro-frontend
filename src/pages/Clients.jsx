@@ -77,7 +77,11 @@ export default function Clients() {
       setModalOpen(false)
       loadClients(user.id)
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Erreur lors de la sauvegarde')
+      const detail = err.response?.data?.detail
+      const msg = Array.isArray(detail)
+        ? detail.map((d) => d.msg).join(', ')
+        : detail || err.message || 'Erreur lors de la sauvegarde'
+      toast.error(msg)
     }
     setSaving(false)
   }
@@ -89,7 +93,9 @@ export default function Clients() {
       toast.success('Client supprimé')
       loadClients(user.id)
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Erreur lors de la suppression')
+      const detail = err.response?.data?.detail
+      const msg = Array.isArray(detail) ? detail.map((d) => d.msg).join(', ') : detail || err.message || 'Erreur lors de la suppression'
+      toast.error(msg)
     }
   }
 
