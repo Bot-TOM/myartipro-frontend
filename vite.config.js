@@ -7,31 +7,34 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico'],
+      includeAssets: ['favicon.png', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'],
       manifest: {
-        name: 'PlombierPro',
-        short_name: 'PlombierPro',
-        description: 'Gestion de devis et factures pour plombiers',
+        name: 'MyArtipro',
+        short_name: 'MyArtipro',
+        description: 'Gestion de devis et factures pour artisans',
         theme_color: '#2563eb',
         background_color: '#f9fafb',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
+        scope: '/',
+        lang: 'fr',
+        categories: ['business', 'productivity'],
         icons: [
           {
-            src: '/icon-192.svg',
+            src: '/icon-192.png',
             sizes: '192x192',
-            type: 'image/svg+xml',
+            type: 'image/png',
           },
           {
-            src: '/icon-192.svg',
+            src: '/icon-512.png',
             sizes: '512x512',
-            type: 'image/svg+xml',
+            type: 'image/png',
           },
           {
-            src: '/icon-192.svg',
+            src: '/icon-512.png',
             sizes: '512x512',
-            type: 'image/svg+xml',
+            type: 'image/png',
             purpose: 'maskable',
           },
         ],
@@ -40,12 +43,23 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/.*supabase\.co\/rest\/v1\/.*/i,
+            // Cache Supabase (auth, data)
+            urlPattern: /^https:\/\/.*supabase\.co\/.*$/i,
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'supabase-api',
-              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 },
+              cacheName: 'supabase-cache',
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 },
               networkTimeoutSeconds: 5,
+            },
+          },
+          {
+            // Cache Railway API (backend)
+            urlPattern: /^https:\/\/.*railway\.app\/.*$/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-cache',
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 5 },
+              networkTimeoutSeconds: 8,
             },
           },
         ],
@@ -58,8 +72,8 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
-      }
-    }
-  }
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
+  },
 })
