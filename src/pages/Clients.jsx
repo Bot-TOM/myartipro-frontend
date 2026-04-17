@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import useAuth from '../lib/useAuth'
 import Layout from '../components/Layout'
 import Modal from '../components/Modal'
+import api from '../lib/api'
 import toast from 'react-hot-toast'
 import { Plus, Pencil, Trash2, Phone, Mail, MapPin, Search, StickyNote } from 'lucide-react'
 import { CLIENT_STATUTS, getStatutConfig } from '../lib/constants'
@@ -67,17 +68,16 @@ export default function Clients() {
     setSaving(true)
     try {
       if (editing) {
-        const { error } = await supabase.from('clients').update(form).eq('id', editing.id)
-        if (error) throw error
+        await api.put(`/clients/${editing.id}`, form)
+        toast.success('Client modifié')
       } else {
-        const { error } = await supabase.from('clients').insert({ ...form, user_id: user.id })
-        if (error) throw error
+        await api.post('/clients', form)
+        toast.success('Client ajouté')
       }
       setModalOpen(false)
-      toast.success(editing ? 'Client modifie' : 'Client ajoute')
       loadClients(user.id)
     } catch (err) {
-      toast.error(err.message || 'Erreur lors de la sauvegarde')
+      toast.error(err.response?.data?.detail || 'Erreur lors de la sauvegarde')
     }
     setSaving(false)
   }
@@ -85,12 +85,11 @@ export default function Clients() {
   const handleDelete = async (id) => {
     if (!window.confirm('Supprimer ce client ?')) return
     try {
-      const { error } = await supabase.from('clients').delete().eq('id', id)
-      if (error) throw error
-      toast.success('Client supprime')
+      await api.delete(`/clients/${id}`)
+      toast.success('Client supprimé')
       loadClients(user.id)
     } catch (err) {
-      toast.error(err.message || 'Erreur lors de la suppression')
+      toast.error(err.response?.data?.detail || 'Erreur lors de la suppression')
     }
   }
 

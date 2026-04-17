@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import axios from 'axios'
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 export default function Register() {
   const navigate = useNavigate()
@@ -36,40 +39,37 @@ export default function Register() {
       return
     }
 
-    const { data, error: authError } = await supabase.auth.signUp({
-      email: form.email,
-      password: form.password,
-    })
+    try {
+      // 1. Créer le compte + profil via le backend (service role — bypass RLS)
+      await axios.post(`${API_URL}/auth/register`, {
+        email: form.email,
+        password: form.password,
+        nom: form.nom,
+        prenom: form.prenom,
+        entreprise: form.entreprise || null,
+        siret: form.siret || null,
+        telephone: form.telephone || null,
+      })
 
-    if (authError) {
-      setError(authError.message)
-      setLoading(false)
-      return
+      // 2. Connecter automatiquement
+      const { error: loginError } = await supabase.auth.signInWithPassword({
+        email: form.email,
+        password: form.password,
+      })
+
+      if (loginError) {
+        setError('Compte créé. Connectez-vous.')
+        navigate('/login')
+        return
+      }
+
+      navigate('/')
+    } catch (err) {
+      const msg = err.response?.data?.detail || 'Erreur lors de la création du compte'
+      setError(msg)
     }
 
-    if (!data.user) {
-      setError("Erreur lors de la création du compte")
-      setLoading(false)
-      return
-    }
-
-    const { error: profileError } = await supabase.from('profiles').insert({
-      id: data.user.id,
-      nom: form.nom,
-      prenom: form.prenom,
-      email: form.email,
-      entreprise: form.entreprise || null,
-      siret: form.siret || null,
-      telephone: form.telephone || null,
-    })
-
-    if (profileError) {
-      setError('Compte créé mais erreur sur le profil : ' + profileError.message)
-      setLoading(false)
-      return
-    }
-
-    navigate('/')
+    setLoading(false)
   }
 
   return (
