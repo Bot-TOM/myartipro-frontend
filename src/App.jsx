@@ -15,6 +15,7 @@ import Profil from './pages/Profil'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import MentionsLegales from './pages/MentionsLegales'
+import DevisPublic from './pages/DevisPublic'
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
         <Route path="/rappels" element={<Rappels />} />
         <Route path="/profil" element={<Profil />} />
         <Route path="/mentions-legales" element={<MentionsLegales />} />
+        <Route path="/devis/public/:token" element={<DevisPublic />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       </AuthProvider>

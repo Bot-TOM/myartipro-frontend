@@ -4,6 +4,7 @@ const statusConfig = {
   accepté: { label: 'Accepté', className: 'bg-green-100 text-green-700' },
   refusé: { label: 'Refusé', className: 'bg-red-100 text-red-700' },
   relancé: { label: 'Relancé', className: 'bg-orange-100 text-orange-700' },
+  consulté: { label: 'Consulté', className: 'bg-violet-100 text-violet-700' },
   en_attente: { label: 'En attente', className: 'bg-yellow-100 text-yellow-700' },
   facturé: { label: 'Facturé', className: 'bg-indigo-100 text-indigo-700' },
   émise: { label: 'Émise', className: 'bg-blue-100 text-blue-700' },

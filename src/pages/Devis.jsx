@@ -1,24 +1,29 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import useAuth from '../lib/useAuth'
 import Layout from '../components/Layout'
 import StatusBadge from '../components/StatusBadge'
 import api from '../lib/api'
-import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Plus, Send, Download, Trash2, Pencil, FileCheck, Clock, AlertTriangle, Zap } from 'lucide-react'
 
 export default function Devis() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
   const [devisList, setDevisList] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('tous')
+  const [confirmEnvoi, setConfirmEnvoi] = useState(null) // id du devis en attente de confirmation
 
+  // Se relance à chaque fois qu'on revient sur cette page (location.key change)
   useEffect(() => {
-    if (user) loadDevis()
-  }, [user])
+    if (user) {
+      setFilter('tous')
+      loadDevis()
+    }
+  }, [user, location.key])
 
   const loadDevis = async () => {
     setLoading(true)
@@ -32,10 +37,17 @@ export default function Devis() {
   }
 
   const handleEnvoyer = async (devisId) => {
-    if (!window.confirm('Envoyer ce devis par email au client ?')) return
+    if (confirmEnvoi !== devisId) {
+      // Premier clic : demande confirmation
+      setConfirmEnvoi(devisId)
+      setTimeout(() => setConfirmEnvoi(null), 4000) // annule au bout de 4s
+      return
+    }
+    // Deuxième clic : envoie
+    setConfirmEnvoi(null)
     try {
       await api.post(`/devis/${devisId}/envoyer`)
-      toast.success('Devis envoyé avec succès')
+      toast.success('Devis envoyé par email !')
       loadDevis()
     } catch (err) {
       toast.error(err.response?.data?.detail || "Erreur lors de l'envoi")
@@ -46,21 +58,20 @@ export default function Devis() {
     try {
       const res = await api.get(`/pdf/devis/${devisId}`, { responseType: 'blob' })
       const blob = new Blob([res.data], { type: 'application/pdf' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${numero || 'devis'}.pdf`
-      document.body.appendChild(a)
-      a.click()
-      setTimeout(() => {
+      // FileReader fonctionne sur iOS Safari contrairement à a.click() avec blob URL
+      const reader = new FileReader()
+      reader.onload = () => {
+        const a = document.createElement('a')
+        a.href = reader.result
+        a.download = `${numero || 'devis'}.pdf`
+        document.body.appendChild(a)
+        a.click()
         document.body.removeChild(a)
-        URL.revokeObjectURL(url)
-      }, 100)
-      toast.success('PDF telecharge !')
+      }
+      reader.readAsDataURL(blob)
+      toast.success('PDF téléchargé !')
     } catch (err) {
-      // erreur PDF silencieuse en prod
-      // Si le serveur renvoie du JSON avec un detail d'erreur
-      let msg = 'Erreur lors du telechargement du PDF'
+      let msg = 'Erreur lors du téléchargement du PDF'
       if (err.response?.data) {
         try {
           const text = await err.response.data.text?.() || ''
@@ -151,7 +162,9 @@ export default function Devis() {
     { value: 'tous', label: 'Tous' },
     { value: 'brouillon', label: 'Brouillons' },
     { value: 'envoyé', label: 'Envoyés' },
+    { value: 'consulté', label: 'Consultés' },
     { value: 'accepté', label: 'Acceptés' },
+    { value: 'refusé', label: 'Refusés' },
     { value: 'facturé', label: 'Facturés' },
     { value: 'relancé', label: 'Relancés' },
   ]
@@ -234,8 +247,17 @@ export default function Devis() {
                       <Download size={18} />
                     </button>
                     {d.statut === 'brouillon' && (
-                      <button onClick={() => handleEnvoyer(d.id)} className="p-2 text-gray-400 hover:text-blue-600 rounded-lg" title="Envoyer">
-                        <Send size={18} />
+                      <button
+                        onClick={() => handleEnvoyer(d.id)}
+                        disabled={!d.clients?.email}
+                        className={`p-2 rounded-lg transition text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed ${
+                          confirmEnvoi === d.id
+                            ? 'bg-blue-600 text-white px-3'
+                            : 'text-gray-400 hover:text-blue-600'
+                        }`}
+                        title={d.clients?.email ? 'Envoyer' : 'Client sans email'}
+                      >
+                        {confirmEnvoi === d.id ? 'Confirmer ?' : <Send size={18} />}
                       </button>
                     )}
                     {(d.statut === 'envoyé' || d.statut === 'accepté' || d.statut === 'relancé') && (
@@ -306,8 +328,17 @@ export default function Devis() {
                           <Download size={16} />
                         </button>
                         {d.statut === 'brouillon' && (
-                          <button onClick={() => handleEnvoyer(d.id)} title="Envoyer" className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition">
-                            <Send size={16} />
+                          <button
+                            onClick={() => handleEnvoyer(d.id)}
+                            disabled={!d.clients?.email}
+                            title={d.clients?.email ? 'Envoyer' : 'Client sans email'}
+                            className={`p-1.5 rounded-lg transition text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed ${
+                              confirmEnvoi === d.id
+                                ? 'bg-blue-600 text-white px-3'
+                                : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
+                            }`}
+                          >
+                            {confirmEnvoi === d.id ? 'Confirmer ?' : <Send size={16} />}
                           </button>
                         )}
                         {(d.statut === 'envoyé' || d.statut === 'accepté' || d.statut === 'relancé') && (

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import useAuth from '../lib/useAuth'
 import Layout from '../components/Layout'
@@ -12,6 +12,7 @@ const emptyClient = { nom: '', prenom: '', email: '', telephone: '', adresse: ''
 
 export default function Clients() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
   const [clients, setClients] = useState([])
   const [loading, setLoading] = useState(true)
@@ -23,8 +24,12 @@ export default function Clients() {
   const [filterStatut, setFilterStatut] = useState('tous')
 
   useEffect(() => {
-    if (user) loadClients(user.id)
-  }, [user])
+    if (user) {
+      setSearch('')
+      setFilterStatut('tous')
+      loadClients(user.id)
+    }
+  }, [user, location.key])
 
   const loadClients = async (userId) => {
     setLoading(true)
@@ -92,6 +97,15 @@ export default function Clients() {
   const updateField = (field) => (e) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }))
 
+  const filtered = clients.filter((c) => {
+    if (filterStatut !== 'tous' && (c.statut || 'nouveau') !== filterStatut) return false
+    if (!search.trim()) return true
+    const q = search.toLowerCase()
+    return [c.nom, c.prenom, c.email, c.telephone, c.adresse]
+      .filter(Boolean)
+      .some((field) => field.toLowerCase().includes(q))
+  })
+
   return (
     <Layout>
       <div className="flex items-center justify-between mb-8">
@@ -150,18 +164,21 @@ export default function Clients() {
             Ajouter votre premier client
           </button>
         </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-xl border">
+          <p className="text-gray-400">Aucun client trouvé</p>
+          {(search || filterStatut !== 'tous') && (
+            <button
+              onClick={() => { setSearch(''); setFilterStatut('tous') }}
+              className="text-primary-600 hover:underline text-sm mt-2 block mx-auto"
+            >
+              Effacer les filtres
+            </button>
+          )}
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {clients
-            .filter((c) => {
-              if (filterStatut !== 'tous' && (c.statut || 'nouveau') !== filterStatut) return false
-              if (!search.trim()) return true
-              const q = search.toLowerCase()
-              return [c.nom, c.prenom, c.email, c.telephone, c.adresse]
-                .filter(Boolean)
-                .some((field) => field.toLowerCase().includes(q))
-            })
-            .map((client) => (
+          {filtered.map((client) => (
             <div key={client.id} className="bg-white rounded-xl border p-5 cursor-pointer hover:shadow-md transition" onClick={() => navigate(`/clients/${client.id}`)}>
               <div className="flex items-start justify-between mb-3">
                 <div>

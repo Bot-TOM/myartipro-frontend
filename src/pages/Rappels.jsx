@@ -5,7 +5,7 @@ import Layout from '../components/Layout'
 import Modal from '../components/Modal'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
-import { Plus, Trash2, Check, Circle, Calendar, User } from 'lucide-react'
+import { Plus, Trash2, Check, Circle, Calendar, User, Clock } from 'lucide-react'
 
 export default function Rappels() {
   const { user } = useAuth()
@@ -14,11 +14,12 @@ export default function Rappels() {
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [filter, setFilter] = useState('a_faire') // a_faire, fait, tous
+  const [filter, setFilter] = useState('a_faire')
 
   const [form, setForm] = useState({
     client_id: '',
     date_rappel: new Date().toISOString().slice(0, 10),
+    heure_rappel: '',
     commentaire: '',
   })
 
@@ -53,6 +54,7 @@ export default function Rappels() {
     setForm({
       client_id: '',
       date_rappel: new Date().toISOString().slice(0, 10),
+      heure_rappel: '',
       commentaire: '',
     })
     setModalOpen(true)
@@ -69,13 +71,14 @@ export default function Rappels() {
       await api.post('/rappels', {
         client_id: form.client_id || null,
         date_rappel: form.date_rappel,
-        commentaire: form.commentaire,
+        heure_rappel: form.heure_rappel || null,
+        commentaire: form.commentaire.trim(),
       })
-      toast.success('Rappel cree')
+      toast.success('Rappel créé')
       setModalOpen(false)
       loadRappels()
-    } catch {
-      toast.error('Erreur lors de la creation')
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Erreur lors de la création')
     }
     setSaving(false)
   }
@@ -83,7 +86,7 @@ export default function Rappels() {
   const toggleFait = async (rappel) => {
     try {
       await api.put(`/rappels/${rappel.id}`, { fait: !rappel.fait })
-      toast.success(rappel.fait ? 'Rappel reactive' : 'Marque comme fait')
+      toast.success(rappel.fait ? 'Rappel réactivé' : 'Marqué comme fait')
       loadRappels()
     } catch {
       toast.error('Erreur')
@@ -94,7 +97,7 @@ export default function Rappels() {
     if (!window.confirm('Supprimer ce rappel ?')) return
     try {
       await api.delete(`/rappels/${id}`)
-      toast.success('Rappel supprime')
+      toast.success('Rappel supprimé')
       loadRappels()
     } catch {
       toast.error('Erreur')
@@ -121,20 +124,21 @@ export default function Rappels() {
 
   const formatDateLabel = (dateStr) => {
     if (dateStr === today) return "Aujourd'hui"
+    const d = new Date(dateStr + 'T00:00:00')
     const tomorrow = new Date()
     tomorrow.setDate(tomorrow.getDate() + 1)
-    if (dateStr === tomorrow.toISOString().slice(0, 10)) return 'Demain'
     const yesterday = new Date()
     yesterday.setDate(yesterday.getDate() - 1)
+    if (dateStr === tomorrow.toISOString().slice(0, 10)) return 'Demain'
     if (dateStr === yesterday.toISOString().slice(0, 10)) return 'Hier'
-    return new Date(dateStr).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+    return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
   }
 
   const isOverdue = (dateStr) => dateStr < today
 
   const filters = [
-    { value: 'a_faire', label: 'A faire' },
-    { value: 'fait', label: 'Termines' },
+    { value: 'a_faire', label: 'À faire' },
+    { value: 'fait', label: 'Terminés' },
     { value: 'tous', label: 'Tous' },
   ]
 
@@ -147,10 +151,16 @@ export default function Rappels() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Rappels</h1>
           <p className="text-gray-500 mt-1">
-            {rappelsAujourdhui > 0 && <span className="text-primary-600 font-medium">{rappelsAujourdhui} aujourd'hui</span>}
+            {rappelsAujourdhui > 0 && (
+              <span className="text-primary-600 font-medium">{rappelsAujourdhui} aujourd'hui</span>
+            )}
             {rappelsAujourdhui > 0 && rappelsEnRetard > 0 && ' · '}
-            {rappelsEnRetard > 0 && <span className="text-red-600 font-medium">{rappelsEnRetard} en retard</span>}
-            {rappelsAujourdhui === 0 && rappelsEnRetard === 0 && `${rappels.length} rappel${rappels.length > 1 ? 's' : ''}`}
+            {rappelsEnRetard > 0 && (
+              <span className="text-red-600 font-medium">{rappelsEnRetard} en retard</span>
+            )}
+            {rappelsAujourdhui === 0 && rappelsEnRetard === 0 && (
+              `${rappels.length} rappel${rappels.length > 1 ? 's' : ''}`
+            )}
           </p>
         </div>
         <button
@@ -185,11 +195,17 @@ export default function Rappels() {
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-xl border">
           <p className="text-gray-400 mb-4">
-            {filter === 'a_faire' ? 'Aucun rappel en attente' : filter === 'fait' ? 'Aucun rappel termine' : 'Aucun rappel'}
+            {filter === 'a_faire'
+              ? 'Aucun rappel en attente'
+              : filter === 'fait'
+              ? 'Aucun rappel terminé'
+              : 'Aucun rappel'}
           </p>
-          <button onClick={openNew} className="text-primary-600 hover:underline font-medium text-sm">
-            Creer un rappel
-          </button>
+          {filter === 'a_faire' && (
+            <button onClick={openNew} className="text-primary-600 hover:underline font-medium text-sm">
+              Créer un rappel
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-6">
@@ -226,11 +242,18 @@ export default function Rappels() {
                       <p className={`text-sm ${r.fait ? 'line-through text-gray-400' : 'text-gray-900'}`}>
                         {r.commentaire}
                       </p>
-                      {r.clients && (
-                        <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
-                          <User size={12} /> {r.clients.prenom} {r.clients.nom}
-                        </p>
-                      )}
+                      <div className="flex items-center gap-3 mt-1 flex-wrap">
+                        {r.heure_rappel && (
+                          <span className="text-xs text-primary-600 font-medium flex items-center gap-1">
+                            <Clock size={11} /> {r.heure_rappel}
+                          </span>
+                        )}
+                        {r.clients && (
+                          <span className="text-xs text-gray-400 flex items-center gap-1">
+                            <User size={11} /> {r.clients.prenom} {r.clients.nom}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <button
                       onClick={() => handleDelete(r.id)}
@@ -246,18 +269,29 @@ export default function Rappels() {
         </div>
       )}
 
-      {/* Modal creation */}
+      {/* Modal création */}
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Nouveau rappel">
         <form onSubmit={handleSave} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
-            <input
-              type="date"
-              value={form.date_rappel}
-              onChange={(e) => setForm({ ...form, date_rappel: e.target.value })}
-              required
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+              <input
+                type="date"
+                value={form.date_rappel}
+                onChange={(e) => setForm({ ...form, date_rappel: e.target.value })}
+                required
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Heure (optionnel)</label>
+              <input
+                type="time"
+                value={form.heure_rappel}
+                onChange={(e) => setForm({ ...form, heure_rappel: e.target.value })}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+              />
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Client (optionnel)</label>
@@ -279,16 +313,24 @@ export default function Rappels() {
               onChange={(e) => setForm({ ...form, commentaire: e.target.value })}
               required
               rows={3}
-              placeholder="Ex: Rappeler M. Dupont pour le devis salle de bain"
+              placeholder="Ex : RDV Solenn Blanchard pour devis salle de bain"
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none resize-none"
             />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={() => setModalOpen(false)} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+            <button
+              type="button"
+              onClick={() => setModalOpen(false)}
+              className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+            >
               Annuler
             </button>
-            <button type="submit" disabled={saving} className="flex-1 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition disabled:opacity-50">
-              {saving ? 'Creation...' : 'Creer'}
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition disabled:opacity-50"
+            >
+              {saving ? 'Création...' : 'Créer'}
             </button>
           </div>
         </form>

@@ -32,20 +32,19 @@ export default function Factures() {
     try {
       const res = await api.get(`/pdf/facture/${factureId}`, { responseType: 'blob' })
       const blob = new Blob([res.data], { type: 'application/pdf' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${numero || 'facture'}.pdf`
-      document.body.appendChild(a)
-      a.click()
-      setTimeout(() => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        const a = document.createElement('a')
+        a.href = reader.result
+        a.download = `${numero || 'facture'}.pdf`
+        document.body.appendChild(a)
+        a.click()
         document.body.removeChild(a)
-        URL.revokeObjectURL(url)
-      }, 100)
-      toast.success('PDF telecharge !')
+      }
+      reader.readAsDataURL(blob)
+      toast.success('PDF téléchargé !')
     } catch (err) {
-      // erreur PDF silencieuse en prod
-      let msg = 'Erreur lors du telechargement du PDF'
+      let msg = 'Erreur lors du téléchargement du PDF'
       if (err.response?.data) {
         try {
           const text = await err.response.data.text?.() || ''

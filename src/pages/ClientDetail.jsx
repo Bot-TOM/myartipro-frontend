@@ -5,7 +5,7 @@ import useAuth from '../lib/useAuth'
 import Layout from '../components/Layout'
 import StatusBadge from '../components/StatusBadge'
 import toast from 'react-hot-toast'
-import { ArrowLeft, Mail, Phone, MapPin, FileText, StickyNote } from 'lucide-react'
+import { ArrowLeft, Mail, Phone, MapPin, FileText, StickyNote, Receipt } from 'lucide-react'
 import { getStatutConfig } from '../lib/constants'
 
 export default function ClientDetail() {
@@ -14,6 +14,7 @@ export default function ClientDetail() {
   const { user } = useAuth()
   const [client, setClient] = useState(null)
   const [devis, setDevis] = useState([])
+  const [factures, setFactures] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -23,7 +24,7 @@ export default function ClientDetail() {
 
   const loadClient = async () => {
     setLoading(true)
-    const [clientRes, devisRes] = await Promise.all([
+    const [clientRes, devisRes, facturesRes] = await Promise.all([
       supabase
         .from('clients')
         .select('*')
@@ -32,6 +33,12 @@ export default function ClientDetail() {
         .single(),
       supabase
         .from('devis')
+        .select('id, numero, titre, montant_ttc, statut, date_creation')
+        .eq('client_id', id)
+        .eq('user_id', user.id)
+        .order('date_creation', { ascending: false }),
+      supabase
+        .from('factures')
         .select('id, numero, titre, montant_ttc, statut, date_creation')
         .eq('client_id', id)
         .eq('user_id', user.id)
@@ -46,6 +53,7 @@ export default function ClientDetail() {
 
     setClient(clientRes.data)
     setDevis(devisRes.data || [])
+    setFactures(facturesRes.data || [])
     setLoading(false)
   }
 
@@ -66,6 +74,8 @@ export default function ClientDetail() {
   const cfg = getStatutConfig(client.statut)
   const totalDevis = devis.reduce((sum, d) => sum + (d.montant_ttc || 0), 0)
   const devisAcceptes = devis.filter((d) => d.statut === 'accepté' || d.statut === 'facturé')
+  const totalFactures = factures.reduce((sum, f) => sum + (f.montant_ttc || 0), 0)
+  const facturesPayees = factures.filter((f) => f.statut === 'payée')
 
   return (
     <Layout>
@@ -125,7 +135,7 @@ export default function ClientDetail() {
       </div>
 
       {/* Stats rapides */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         <div className="bg-white rounded-xl border p-4 text-center">
           <p className="text-2xl font-bold text-gray-900">{devis.length}</p>
           <p className="text-sm text-gray-500">Devis</p>
@@ -134,9 +144,13 @@ export default function ClientDetail() {
           <p className="text-2xl font-bold text-gray-900">{formatEur(totalDevis)}</p>
           <p className="text-sm text-gray-500">Total devis</p>
         </div>
-        <div className="bg-white rounded-xl border p-4 text-center col-span-2 sm:col-span-1">
-          <p className="text-2xl font-bold text-green-600">{devisAcceptes.length}</p>
-          <p className="text-sm text-gray-500">Acceptes</p>
+        <div className="bg-white rounded-xl border p-4 text-center">
+          <p className="text-2xl font-bold text-gray-900">{factures.length}</p>
+          <p className="text-sm text-gray-500">Factures</p>
+        </div>
+        <div className="bg-white rounded-xl border p-4 text-center">
+          <p className="text-2xl font-bold text-green-600">{formatEur(totalFactures)}</p>
+          <p className="text-sm text-gray-500">Facture</p>
         </div>
       </div>
 
@@ -172,6 +186,39 @@ export default function ClientDetail() {
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-semibold text-gray-900">{formatEur(d.montant_ttc)}</span>
                   <StatusBadge statut={d.statut} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Liste des factures du client */}
+      <div className="bg-white rounded-xl border mt-6">
+        <div className="px-5 py-4 border-b">
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <Receipt size={18} /> Factures
+          </h2>
+        </div>
+        {factures.length === 0 ? (
+          <div className="p-8 text-center text-gray-400">
+            <p>Aucune facture pour ce client</p>
+          </div>
+        ) : (
+          <div className="divide-y">
+            {factures.map((f) => (
+              <div
+                key={f.id}
+                onClick={() => navigate('/factures')}
+                className="px-5 py-3 flex items-center justify-between hover:bg-gray-50 cursor-pointer transition"
+              >
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{f.numero}</p>
+                  <p className="text-xs text-gray-500">{f.titre} - {formatDate(f.date_creation)}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-semibold text-gray-900">{formatEur(f.montant_ttc)}</span>
+                  <StatusBadge statut={f.statut} />
                 </div>
               </div>
             ))}
