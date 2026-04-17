@@ -8,26 +8,32 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  // S'assure que le profil existe en base (auto-création si manquant)
+  // Garantit l'existence du profil avant de débloquer l'app
   const ensureProfile = async () => {
     try {
       await api.get('/auth/me')
     } catch {
-      // Silencieux — l'utilisateur sera redirigé si le token est invalide
+      // Silencieux — token invalide ou backend indisponible
     }
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        await ensureProfile() // bloquant : profil garanti avant rendu
+      }
       setUser(session?.user ?? null)
       setLoading(false)
-      if (session?.user) ensureProfile()
-    })
+    }
+    init()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (_event, session) => {
+        if (session?.user) {
+          await ensureProfile()
+        }
         setUser(session?.user ?? null)
-        if (session?.user) ensureProfile()
       }
     )
 
