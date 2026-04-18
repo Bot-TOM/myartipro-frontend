@@ -107,7 +107,11 @@ export default function NewDevis() {
       toast.success('Devis créé avec succès')
       navigate('/devis')
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Erreur lors de la création')
+      const detail = err.response?.data?.detail
+      const msg = Array.isArray(detail)
+        ? detail.map((d) => d.msg).join(', ')
+        : detail || err.message || 'Erreur lors de la création'
+      toast.error(msg)
       setSaving(false)
     }
   }
