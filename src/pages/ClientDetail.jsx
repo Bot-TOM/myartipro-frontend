@@ -6,7 +6,6 @@ import Layout from '../components/Layout'
 import StatusBadge from '../components/StatusBadge'
 import toast from 'react-hot-toast'
 import { ArrowLeft, Mail, Phone, MapPin, FileText, StickyNote, Receipt } from 'lucide-react'
-import { getStatutConfig } from '../lib/constants'
 
 export default function ClientDetail() {
   const { id } = useParams()
@@ -71,7 +70,6 @@ export default function ClientDetail() {
 
   if (!client) return null
 
-  const cfg = getStatutConfig(client.statut)
   const totalDevis = devis.reduce((sum, d) => sum + (d.montant_ttc || 0), 0)
   const devisAcceptes = devis.filter((d) => d.statut === 'accepté' || d.statut === 'facturé')
   const totalFactures = factures.reduce((sum, f) => sum + (f.montant_ttc || 0), 0)
@@ -92,9 +90,6 @@ export default function ClientDetail() {
         <div className="flex items-start justify-between mb-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{client.prenom} {client.nom}</h1>
-            <span className={`inline-block mt-2 px-2.5 py-1 rounded-full text-xs font-medium ${cfg.className}`}>
-              {cfg.label}
-            </span>
           </div>
           <a
             href={`tel:${client.telephone}`}
