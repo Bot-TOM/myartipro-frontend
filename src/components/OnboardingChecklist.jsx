@@ -72,39 +72,45 @@ export default function OnboardingChecklist({
   const progress = Math.round((completedCount / total) * 100)
   const allDone = completedCount === total
 
-  // Persistance en DB (une seule fois) dès que fini ou ignoré.
+  // Persistance en DB (une seule fois) du flag `onboarding_done`.
   const persist = async () => {
     if (persistedRef.current) return
     persistedRef.current = true
     try {
       await api.put('/auth/me', { onboarding_done: true })
     } catch {
-      // silencieux : si l'appel échoue, la checklist réapparaitra
-      // au prochain chargement — pas bloquant.
+      // Silencieux : si l'appel échoue, le flag sera retenté à la fermeture.
       persistedRef.current = false
     }
   }
 
-  // Auto-dismiss dès que 4/4 atteint.
+  // Dès que 4/4 atteint, on persiste le flag en DB en tâche de fond
+  // (la checklist reste affichée pour montrer le résultat, et l'user
+  // la ferme manuellement via le bouton X).
   useEffect(() => {
-    if (allDone && !dismissed) {
-      setDismissed(true)
+    if (profil && allDone && !profil.onboarding_done) {
       persist()
-      onDismiss?.()
     }
-  }, [allDone, dismissed, onDismiss])
+  }, [profil, allDone])
 
-  const handleIgnore = () => {
+  const handleClose = () => {
     setDismissed(true)
     persist()
     onDismiss?.()
   }
 
-  // Ne rien afficher si déjà terminé côté DB, ou dismissé localement.
+  // Ne rien afficher si déjà marqué fini côté DB, ou fermé localement.
   if (!profil || profil.onboarding_done || dismissed) return null
 
   const prenom = (profil.prenom || '').trim()
-  const titre = prenom ? `Bienvenue ${prenom} !` : 'Bienvenue sur MyArtipro !'
+  const titre = allDone
+    ? 'Tout est configuré, bravo !'
+    : prenom
+      ? `Bienvenue ${prenom} !`
+      : 'Bienvenue sur MyArtipro !'
+  const sousTitre = allDone
+    ? 'Tu peux fermer cet encart.'
+    : `${completedCount}/${total} étape${total > 1 ? 's' : ''} complétée${completedCount > 1 ? 's' : ''}`
 
   return (
     <div className="bg-gradient-to-br from-primary-50 to-blue-50 border border-primary-200 rounded-xl p-4 sm:p-5 mb-5">
@@ -115,19 +121,17 @@ export default function OnboardingChecklist({
           </div>
           <div className="min-w-0">
             <h2 className="text-sm font-semibold text-gray-900 truncate">{titre}</h2>
-            <p className="text-xs text-gray-500">
-              {completedCount}/{total} étape{total > 1 ? 's' : ''} complétée{completedCount > 1 ? 's' : ''}
-            </p>
+            <p className="text-xs text-gray-500">{sousTitre}</p>
           </div>
         </div>
         <button
-          onClick={handleIgnore}
+          onClick={handleClose}
           className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 shrink-0"
-          aria-label="Ignorer la checklist"
+          aria-label="Fermer la checklist"
           type="button"
         >
           <X size={14} />
-          <span className="hidden sm:inline">Ignorer</span>
+          <span className="hidden sm:inline">{allDone ? 'Fermer' : 'Ignorer'}</span>
         </button>
       </div>
 
