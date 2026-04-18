@@ -11,7 +11,7 @@ import EmptyState from '../components/EmptyState'
 import ProfilIncompletBanner from '../components/ProfilIncompletBanner'
 import useProfil from '../lib/useProfil'
 import toast from 'react-hot-toast'
-import { Plus, Send, Download, Trash2, Pencil, FileCheck, Clock, AlertTriangle, Zap, FileText } from 'lucide-react'
+import { Plus, Send, Download, Trash2, Pencil, FileCheck, Clock, AlertTriangle, Zap, FileText, Copy } from 'lucide-react'
 
 export default function Devis() {
   const navigate = useNavigate()
@@ -75,6 +75,16 @@ export default function Devis() {
       loadDevis()
     } catch (err) {
       toastApiError(err, 'Erreur lors de la suppression')
+    }
+  }
+
+  const handleDupliquer = async (devisId) => {
+    try {
+      await api.post(`/devis/${devisId}/dupliquer`)
+      toast.success('Devis dupliqué — brouillon créé')
+      loadDevis()
+    } catch (err) {
+      toastApiError(err, 'Erreur lors de la duplication')
     }
   }
 
@@ -253,6 +263,9 @@ export default function Devis() {
                     <button onClick={() => handleDownloadPDF(d.id, d.numero)} className="p-2 text-gray-400 hover:text-primary-600 rounded-lg" title="PDF">
                       <Download size={18} />
                     </button>
+                    <button onClick={() => handleDupliquer(d.id)} className="p-2 text-gray-400 hover:text-primary-600 rounded-lg" title="Dupliquer">
+                      <Copy size={18} />
+                    </button>
                     {d.statut === 'brouillon' && (
                       <button
                         onClick={() => handleEnvoyer(d.id)}
@@ -333,6 +346,9 @@ export default function Devis() {
                         )}
                         <button onClick={() => handleDownloadPDF(d.id, d.numero)} title="PDF" className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition">
                           <Download size={16} />
+                        </button>
+                        <button onClick={() => handleDupliquer(d.id)} title="Dupliquer" className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition">
+                          <Copy size={16} />
                         </button>
                         {d.statut === 'brouillon' && (
                           <button
