@@ -34,13 +34,19 @@ export default function Clients() {
 
   const loadClients = async (userId) => {
     setLoading(true)
-    const { data } = await supabase
-      .from('clients')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-    setClients(data || [])
-    setLoading(false)
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      setClients(data || [])
+    } catch (err) {
+      toastApiError(err, 'Erreur lors du chargement des clients')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const openNew = () => {

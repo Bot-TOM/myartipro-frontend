@@ -21,9 +21,15 @@ api.interceptors.request.use(async (config) => {
 
 api.interceptors.response.use(
   (r) => r,
-  (err) => {
-    // Log pour debug — visible dans DevTools console
+  async (err) => {
     console.error('[API]', err.config?.method?.toUpperCase(), err.config?.url, '→', err.message)
+
+    // 401 = JWT expiré ou user supprimé → on force un signOut propre
+    // pour éviter que l'app reste bloquée avec un token invalide
+    if (err.response?.status === 401) {
+      await supabase.auth.signOut().catch(() => {})
+    }
+
     return Promise.reject(err)
   }
 )

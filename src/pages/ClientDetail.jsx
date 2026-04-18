@@ -24,37 +24,42 @@ export default function ClientDetail() {
 
   const loadClient = async () => {
     setLoading(true)
-    const [clientRes, devisRes, facturesRes] = await Promise.all([
-      supabase
-        .from('clients')
-        .select('*')
-        .eq('id', id)
-        .eq('user_id', user.id)
-        .single(),
-      supabase
-        .from('devis')
-        .select('id, numero, titre, montant_ttc, statut, date_creation')
-        .eq('client_id', id)
-        .eq('user_id', user.id)
-        .order('date_creation', { ascending: false }),
-      supabase
-        .from('factures')
-        .select('id, numero, titre, montant_ttc, statut, date_creation')
-        .eq('client_id', id)
-        .eq('user_id', user.id)
-        .order('date_creation', { ascending: false }),
-    ])
+    try {
+      const [clientRes, devisRes, facturesRes] = await Promise.all([
+        supabase
+          .from('clients')
+          .select('*')
+          .eq('id', id)
+          .eq('user_id', user.id)
+          .single(),
+        supabase
+          .from('devis')
+          .select('id, numero, titre, montant_ttc, statut, date_creation')
+          .eq('client_id', id)
+          .eq('user_id', user.id)
+          .order('date_creation', { ascending: false }),
+        supabase
+          .from('factures')
+          .select('id, numero, titre, montant_ttc, statut, date_creation')
+          .eq('client_id', id)
+          .eq('user_id', user.id)
+          .order('date_creation', { ascending: false }),
+      ])
 
-    if (!clientRes.data) {
-      toast.error('Client introuvable')
-      navigate('/clients')
-      return
+      if (!clientRes.data) {
+        toast.error('Client introuvable')
+        navigate('/clients')
+        return
+      }
+
+      setClient(clientRes.data)
+      setDevis(devisRes.data || [])
+      setFactures(facturesRes.data || [])
+    } catch (err) {
+      toast.error(err?.message || 'Erreur lors du chargement du client')
+    } finally {
+      setLoading(false)
     }
-
-    setClient(clientRes.data)
-    setDevis(devisRes.data || [])
-    setFactures(facturesRes.data || [])
-    setLoading(false)
   }
 
   const formatDate = (dateStr) => {
