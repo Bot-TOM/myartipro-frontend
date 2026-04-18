@@ -14,7 +14,7 @@ export default function ResetPassword() {
     setError('')
 
     if (password.length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caracteres')
+      setError('Le mot de passe doit contenir au moins 6 caractères')
       return
     }
 
@@ -24,18 +24,18 @@ export default function ResetPassword() {
     }
 
     setLoading(true)
-
-    const { error: updateError } = await supabase.auth.updateUser({
-      password,
-    })
-
-    if (updateError) {
-      setError(updateError.message)
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({ password })
+      if (updateError) {
+        setError(updateError.message)
+        return
+      }
+      navigate('/')
+    } catch (err) {
+      setError(err?.message || 'Erreur lors de la mise à jour')
+    } finally {
       setLoading(false)
-      return
     }
-
-    navigate('/')
   }
 
   return (
@@ -82,7 +82,7 @@ export default function ResetPassword() {
             disabled={loading}
             className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 rounded-lg transition disabled:opacity-50 text-base"
           >
-            {loading ? 'Mise a jour...' : 'Mettre a jour le mot de passe'}
+            {loading ? 'Mise à jour...' : 'Mettre à jour le mot de passe'}
           </button>
         </form>
       </div>

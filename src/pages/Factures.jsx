@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import useAuth from '../lib/useAuth'
 import Layout from '../components/Layout'
@@ -13,13 +14,15 @@ import { Download, Trash2, CheckCircle, CreditCard, Copy, FileSpreadsheet, Recei
 
 export default function Factures() {
   const { user } = useAuth()
+  const location = useLocation()
   const [factures, setFactures] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('tous')
 
+  // Relance à chaque retour sur la page (location.key change)
   useEffect(() => {
     if (user) loadFactures()
-  }, [user])
+  }, [user, location.key])
 
   const loadFactures = async () => {
     setLoading(true)

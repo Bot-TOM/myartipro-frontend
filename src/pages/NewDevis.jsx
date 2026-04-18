@@ -42,7 +42,13 @@ export default function NewDevis() {
       .select('id, nom, prenom')
       .eq('user_id', user.id)
       .order('nom')
-      .then(({ data }) => setClients(data || []))
+      .then(({ data, error }) => {
+        if (error) {
+          toast.error('Erreur chargement clients')
+          return
+        }
+        setClients(data || [])
+      })
   }, [user])
 
   const addPrestation = () => {

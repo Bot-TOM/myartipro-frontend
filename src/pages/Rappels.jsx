@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import useAuth from '../lib/useAuth'
 import Layout from '../components/Layout'
@@ -12,6 +13,7 @@ import { Plus, Trash2, Check, Circle, Calendar, User, Clock, Bell } from 'lucide
 
 export default function Rappels() {
   const { user } = useAuth()
+  const location = useLocation()
   const [rappels, setRappels] = useState([])
   const [clients, setClients] = useState([])
   const [loading, setLoading] = useState(true)
@@ -26,12 +28,13 @@ export default function Rappels() {
     commentaire: '',
   })
 
+  // Relance à chaque retour sur la page
   useEffect(() => {
     if (user) {
       loadRappels()
       loadClients()
     }
-  }, [user])
+  }, [user, location.key])
 
   const loadRappels = async () => {
     setLoading(true)
