@@ -4,7 +4,7 @@ import Layout from '../components/Layout'
 import api from '../lib/api'
 import { toastApiError } from '../lib/toastApiError'
 import toast from 'react-hot-toast'
-import { User, Building2, Phone, MapPin, CreditCard, Save, ImagePlus, Trash2, Wallet, ToggleLeft, ToggleRight } from 'lucide-react'
+import { User, Building2, Phone, MapPin, CreditCard, Save, ImagePlus, Trash2, Wallet, ToggleLeft, ToggleRight, Receipt } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 const MOYENS = [
@@ -33,6 +33,7 @@ export default function Profil() {
     stripe_enabled: false,
     moyens_paiement: [],
     instructions_paiement: '',
+    regime_tva: 'franchise',
   })
 
   useEffect(() => {
@@ -52,6 +53,7 @@ export default function Profil() {
           stripe_enabled: p.stripe_enabled || false,
           moyens_paiement: p.moyens_paiement || [],
           instructions_paiement: p.instructions_paiement || '',
+          regime_tva: p.regime_tva || 'franchise',
         })
       } catch (err) {
         toastApiError(err, 'Erreur chargement du profil')
@@ -353,6 +355,60 @@ export default function Profil() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Régime TVA */}
+        <div className="bg-white rounded-xl border p-5 space-y-4">
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <Receipt size={18} className="text-primary-600" /> Régime TVA
+          </h2>
+          <p className="text-sm text-gray-500">
+            Votre régime fiscal détermine si vous facturez la TVA à vos clients.
+          </p>
+          <div className="space-y-2">
+            <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition ${
+              form.regime_tva === 'franchise'
+                ? 'border-primary-400 bg-primary-50'
+                : 'border-gray-200 hover:bg-gray-50'
+            }`}>
+              <input
+                type="radio"
+                name="regime_tva"
+                value="franchise"
+                checked={form.regime_tva === 'franchise'}
+                onChange={() => setForm((prev) => ({ ...prev, regime_tva: 'franchise' }))}
+                className="mt-0.5 accent-primary-600"
+              />
+              <div>
+                <p className="text-sm font-medium text-gray-800">Franchise en base (art. 293 B CGI)</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Pas de TVA sur vos factures. La mention "TVA non applicable" est ajoutée automatiquement sur vos PDF.
+                  Regime habituel des auto-entrepreneurs sous le seuil de franchise.
+                </p>
+              </div>
+            </label>
+            <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition ${
+              form.regime_tva === 'reel'
+                ? 'border-primary-400 bg-primary-50'
+                : 'border-gray-200 hover:bg-gray-50'
+            }`}>
+              <input
+                type="radio"
+                name="regime_tva"
+                value="reel"
+                checked={form.regime_tva === 'reel'}
+                onChange={() => setForm((prev) => ({ ...prev, regime_tva: 'reel' }))}
+                className="mt-0.5 accent-primary-600"
+              />
+              <div>
+                <p className="text-sm font-medium text-gray-800">Regime réel d'imposition</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Vous collectez la TVA (20%, 10% ou 5,5%) et la reversez à l'administration.
+                  S'applique si vous avez depassé les seuils ou opté volontairement pour ce régime.
+                </p>
+              </div>
+            </label>
+          </div>
         </div>
 
         {/* Info */}

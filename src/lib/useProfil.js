@@ -46,10 +46,14 @@ export default function useProfil() {
     if (!aIdentite) missing.push(LABELS.identite)
   }
 
+  // regime_tva : 'franchise' par défaut (auto-entrepreneur non assujetti)
+  const isFranchise = !profil || profil.regime_tva !== 'reel'
+
   return {
     profil,
     loading,
     isComplete: !!profil && missing.length === 0,
     missing,
+    isFranchise,
   }
 }

@@ -22,7 +22,7 @@ export default function NewDevis() {
   const [error, setError] = useState('')
   const [showNewClient, setShowNewClient] = useState(false)
   const online = useOnline()
-  const { isComplete: profilComplet, missing: profilMissing } = useProfil()
+  const { isComplete: profilComplet, missing: profilMissing, isFranchise } = useProfil()
 
   const [form, setForm] = useState({
     client_id: '',
@@ -37,6 +37,16 @@ export default function NewDevis() {
   const [prestations, setPrestations] = useState([
     { description: '', quantite: 1, prix_unitaire: 0 },
   ])
+
+  // Synchronise le taux de TVA avec le régime du profil
+  useEffect(() => {
+    if (isFranchise) {
+      setForm((prev) => ({ ...prev, tva: 0 }))
+    } else if (form.tva === 0) {
+      setForm((prev) => ({ ...prev, tva: 20 }))
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFranchise])
 
   useEffect(() => {
     if (!user) return
@@ -187,14 +197,29 @@ export default function NewDevis() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">TVA (%)</label>
-              <input
-                type="number"
-                value={form.tva}
-                onChange={(e) => setForm({ ...form, tva: e.target.value })}
-                step="0.1"
-                className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-base"
-              />
+              {isFranchise ? (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 text-xs text-amber-700 leading-snug">
+                  TVA non applicable — franchise en base (art. 293 B CGI)
+                </div>
+              ) : (
+                <>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    TVA (%)
+                    <span className="ml-1 text-xs font-normal text-gray-400" title="20% standard · 10% rénovation logement ancien · 5,5% rénovation énergétique">
+                      ⓘ
+                    </span>
+                  </label>
+                  <select
+                    value={form.tva}
+                    onChange={(e) => setForm({ ...form, tva: e.target.value })}
+                    className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-base"
+                  >
+                    <option value={20}>20% — Taux standard</option>
+                    <option value={10}>10% — Rénovation logement ancien</option>
+                    <option value={5.5}>5,5% — Rénovation énergétique</option>
+                  </select>
+                </>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Validité</label>
@@ -330,11 +355,15 @@ export default function NewDevis() {
               <div className="flex justify-between text-sm text-gray-600">
                 <span>Total HT</span><span>{formatEur(montantHT)}</span>
               </div>
-              <div className="flex justify-between text-sm text-gray-600">
-                <span>TVA ({form.tva}%)</span><span>{formatEur(montantTVA)}</span>
-              </div>
+              {isFranchise ? (
+                <div className="text-xs text-amber-600 italic">TVA non applicable (franchise en base)</div>
+              ) : (
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>TVA ({form.tva}%)</span><span>{formatEur(montantTVA)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-lg font-bold text-gray-900 border-t pt-2">
-                <span>Total TTC</span><span>{formatEur(montantTTC)}</span>
+                <span>Total {isFranchise ? 'HT' : 'TTC'}</span><span>{formatEur(montantTTC)}</span>
               </div>
             </div>
           </div>
