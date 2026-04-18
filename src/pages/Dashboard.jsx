@@ -2,14 +2,18 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import useAuth from '../lib/useAuth'
+import useProfil from '../lib/useProfil'
 import Layout from '../components/Layout'
+import OnboardingChecklist from '../components/OnboardingChecklist'
 import { SkeletonStat, SkeletonLine, SkeletonBlock } from '../components/Skeleton'
 import { FileText, Users, Plus, Receipt, AlertCircle, TrendingUp, Bell, Zap, Clock, ArrowRight, CheckCircle } from 'lucide-react'
 
 export default function Dashboard() {
   const { user } = useAuth()
+  const { profil, isComplete: isProfilComplete } = useProfil()
   const [loading, setLoading] = useState(true)
   const [actions, setActions] = useState([])
+  const [devisList, setDevisList] = useState([])
   const [stats, setStats] = useState({
     caMois: 0,
     montantImpaye: 0,
@@ -82,6 +86,7 @@ export default function Dashboard() {
       const facturesPayees = facturesList.filter((f) => f.statut === 'payée')
       const facturesImpayees = facturesList.filter((f) => f.statut !== 'payée')
 
+      setDevisList(devisRes.data || [])
       setStats({
         caMois: facturesPayees
           .filter((f) => f.date_paiement && f.date_paiement >= debutMois)
@@ -146,6 +151,14 @@ export default function Dashboard() {
           <span className="sm:hidden">Devis</span>
         </Link>
       </div>
+
+      {/* Onboarding — première utilisation */}
+      <OnboardingChecklist
+        profil={profil}
+        isProfilComplete={isProfilComplete}
+        clientsCount={stats.clients}
+        devis={devisList}
+      />
 
       {/* Actions à faire */}
       {actions.length > 0 ? (
