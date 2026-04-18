@@ -51,11 +51,15 @@ export default function Factures() {
     }
   }
 
-  const handleDelete = async (factureId) => {
-    if (!window.confirm('Supprimer cette facture ?')) return
+  const handleDelete = async (facture) => {
+    const estBrouillon = facture.statut === 'brouillon'
+    const message = estBrouillon
+      ? 'Supprimer définitivement cette facture ?'
+      : 'Cette facture sera archivée (conservation légale 10 ans obligatoire). Continuer ?'
+    if (!window.confirm(message)) return
     try {
-      await api.delete(`/factures/${factureId}`)
-      toast.success('Facture supprimée')
+      const { data } = await api.delete(`/factures/${facture.id}`)
+      toast.success(data?.message || (estBrouillon ? 'Facture supprimée' : 'Facture archivée'))
       loadFactures()
     } catch (err) {
       toastApiError(err, 'Erreur lors de la suppression')
@@ -213,7 +217,7 @@ export default function Factures() {
                         <CheckCircle size={18} />
                       </button>
                     )}
-                    <button onClick={() => handleDelete(f.id)} className="p-2 text-gray-400 hover:text-red-600 rounded-lg" title="Supprimer">
+                    <button onClick={() => handleDelete(f)} className="p-2 text-gray-400 hover:text-red-600 rounded-lg" title="Supprimer">
                       <Trash2 size={18} />
                     </button>
                   </div>
@@ -268,7 +272,7 @@ export default function Factures() {
                             <CheckCircle size={16} />
                           </button>
                         )}
-                        <button onClick={() => handleDelete(f.id)} title="Supprimer" className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
+                        <button onClick={() => handleDelete(f)} title="Supprimer" className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
                           <Trash2 size={16} />
                         </button>
                       </div>

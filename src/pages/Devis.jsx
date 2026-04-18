@@ -8,6 +8,8 @@ import Layout from '../components/Layout'
 import StatusBadge from '../components/StatusBadge'
 import { SkeletonCardList, SkeletonTableRow } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
+import ProfilIncompletBanner from '../components/ProfilIncompletBanner'
+import useProfil from '../lib/useProfil'
 import toast from 'react-hot-toast'
 import { Plus, Send, Download, Trash2, Pencil, FileCheck, Clock, AlertTriangle, Zap, FileText } from 'lucide-react'
 
@@ -19,6 +21,7 @@ export default function Devis() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('tous')
   const [confirmEnvoi, setConfirmEnvoi] = useState(null) // id du devis en attente de confirmation
+  const { isComplete: profilComplet, missing: profilMissing } = useProfil()
 
   // Se relance à chaque fois qu'on revient sur cette page (location.key change)
   useEffect(() => {
@@ -40,6 +43,10 @@ export default function Devis() {
   }
 
   const handleEnvoyer = async (devisId) => {
+    if (!profilComplet) {
+      toast.error(`Profil incomplet : ${profilMissing.join(', ')}`)
+      return
+    }
     if (confirmEnvoi !== devisId) {
       // Premier clic : demande confirmation
       setConfirmEnvoi(devisId)
@@ -72,6 +79,10 @@ export default function Devis() {
   }
 
   const handleConvertir = async (devisId) => {
+    if (!profilComplet) {
+      toast.error(`Profil incomplet : ${profilMissing.join(', ')}`)
+      return
+    }
     if (!window.confirm('Convertir ce devis en facture ?')) return
     try {
       await api.post(`/factures/depuis-devis/${devisId}`)
@@ -166,6 +177,8 @@ export default function Devis() {
           <span className="sm:hidden">Créer</span>
         </Link>
       </div>
+
+      <ProfilIncompletBanner missing={profilMissing} />
 
       <div className="flex gap-2 mb-6 overflow-x-auto">
         {filters.map((f) => (

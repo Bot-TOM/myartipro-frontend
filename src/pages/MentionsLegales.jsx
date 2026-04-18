@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
+import { LEGAL } from '../lib/legal'
 
 export default function MentionsLegales() {
+  const { editeur, hebergement, rgpd, miseAJour } = LEGAL
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-3xl mx-auto px-4 py-12">
@@ -11,31 +14,32 @@ export default function MentionsLegales() {
         </Link>
 
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Mentions légales</h1>
-        <p className="text-gray-400 text-sm mb-8">Dernière mise à jour : avril 2026</p>
+        <p className="text-gray-400 text-sm mb-8">Dernière mise à jour : {miseAJour}</p>
 
         <div className="bg-white rounded-xl border p-6 sm:p-8 space-y-8 text-sm text-gray-700 leading-relaxed">
           <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">1. Éditeur du site</h2>
             <p>
-              <strong>MyArtipro</strong><br />
-              [Nom de votre entreprise ou votre nom complet]<br />
-              [Adresse postale]<br />
-              [Numéro SIRET]<br />
-              Email : [votre email de contact]<br />
-              Téléphone : [votre numéro]
-            </p>
-            <p className="mt-2 text-gray-400 italic">
-              À compléter avec vos informations réelles avant mise en production.
+              <strong>{editeur.raisonSociale}</strong><br />
+              {editeur.responsable}<br />
+              {editeur.adresse}<br />
+              SIRET : {editeur.siret}<br />
+              Email : <a href={`mailto:${editeur.email}`} className="text-primary-600 hover:underline">{editeur.email}</a><br />
+              Téléphone : {editeur.telephone}
             </p>
           </section>
 
           <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">2. Hébergement</h2>
-            <p>
-              Le site est hébergé par :<br />
-              [Nom de l'hébergeur — ex : Vercel, Railway, OVH]<br />
-              [Adresse de l'hébergeur]
-            </p>
+            <p className="mb-2">Le service repose sur les prestataires suivants :</p>
+            <ul className="list-disc pl-5 space-y-2">
+              {hebergement.map((h) => (
+                <li key={h.nom}>
+                  <strong>{h.nom}</strong> — {h.role}<br />
+                  <span className="text-gray-500">{h.adresse}</span>
+                </li>
+              ))}
+            </ul>
           </section>
 
           <section>
@@ -50,9 +54,16 @@ export default function MentionsLegales() {
               (Union européenne) et ne sont accessibles qu'à vous, l'utilisateur authentifié.
             </p>
             <p className="mt-2">
-              Conformément au RGPD, vous disposez d'un droit d'accès, de modification et de
-              suppression de vos données. Pour exercer ces droits, contactez-nous à
-              [votre email de contact].
+              Conformément au RGPD (articles 15 à 22), vous disposez d'un droit d'accès,
+              de rectification, d'effacement, de limitation et de portabilité de vos données.
+              Pour exercer ces droits, contactez-nous à{' '}
+              <a href={`mailto:${rgpd.emailContact}`} className="text-primary-600 hover:underline">
+                {rgpd.emailContact}
+              </a>.
+            </p>
+            <p className="mt-2">
+              Les factures émises sont conservées 10 ans conformément à l'article L123-22 du
+              Code de commerce, même après demande de suppression du compte.
             </p>
           </section>
 

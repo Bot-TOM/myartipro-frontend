@@ -11,6 +11,8 @@ import { enqueueRequest } from '../lib/offlineQueue'
 import { Plus, Trash2, ArrowLeft, UserPlus } from 'lucide-react'
 import QuickClientModal from '../components/QuickClientModal'
 import { PRESTATIONS_TYPES } from '../lib/constants'
+import useProfil from '../lib/useProfil'
+import ProfilIncompletBanner from '../components/ProfilIncompletBanner'
 
 export default function NewDevis() {
   const navigate = useNavigate()
@@ -20,6 +22,7 @@ export default function NewDevis() {
   const [error, setError] = useState('')
   const [showNewClient, setShowNewClient] = useState(false)
   const online = useOnline()
+  const { isComplete: profilComplet, missing: profilMissing } = useProfil()
 
   const [form, setForm] = useState({
     client_id: '',
@@ -79,6 +82,10 @@ export default function NewDevis() {
     e.preventDefault()
     setError('')
 
+    if (!profilComplet) {
+      setError(`Profil incomplet : renseignez ${profilMissing.join(', ')} avant de créer un devis`)
+      return
+    }
     if (!form.client_id) { setError('Sélectionnez un client'); return }
     if (prestations.some((p) => !p.description || !p.prix_unitaire)) {
       setError('Remplissez toutes les prestations (description + prix)')
@@ -130,6 +137,8 @@ export default function NewDevis() {
       </button>
 
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Nouveau devis</h1>
+
+      <ProfilIncompletBanner missing={profilMissing} />
 
       {error && (
         <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-6">{error}</div>
