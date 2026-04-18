@@ -1,25 +1,25 @@
 export const PRESTATIONS_TYPES = [
-  'Main d\'oeuvre',
-  'Fourniture de materiel',
-  'Deplacement',
+  'Main d\'œuvre',
+  'Fourniture de matériel',
+  'Déplacement',
   'Installation',
-  'Reparation',
+  'Réparation',
   'Entretien / Maintenance',
   'Diagnostic / Expertise',
-  'Mise en conformite',
-  'Depose / Demontage',
+  'Mise en conformité',
+  'Dépose / Démontage',
   'Pose / Montage',
   'Autre',
 ]
 
 export const CLIENT_STATUTS = [
   { value: 'nouveau', label: 'Nouveau', className: 'bg-blue-100 text-blue-700' },
-  { value: 'a_rappeler', label: 'A rappeler', className: 'bg-orange-100 text-orange-700' },
-  { value: 'rdv_prevu', label: 'RDV prevu', className: 'bg-purple-100 text-purple-700' },
-  { value: 'devis_envoye', label: 'Devis envoye', className: 'bg-cyan-100 text-cyan-700' },
+  { value: 'a_rappeler', label: 'À rappeler', className: 'bg-orange-100 text-orange-700' },
+  { value: 'rdv_prevu', label: 'RDV prévu', className: 'bg-purple-100 text-purple-700' },
+  { value: 'devis_envoye', label: 'Devis envoyé', className: 'bg-cyan-100 text-cyan-700' },
   { value: 'relance', label: 'Relance', className: 'bg-amber-100 text-amber-700' },
-  { value: 'accepte', label: 'Accepte', className: 'bg-green-100 text-green-700' },
-  { value: 'refuse', label: 'Refuse', className: 'bg-red-100 text-red-700' },
+  { value: 'accepte', label: 'Accepté', className: 'bg-green-100 text-green-700' },
+  { value: 'refuse', label: 'Refusé', className: 'bg-red-100 text-red-700' },
 ]
 
 export const getStatutConfig = (statut) =>

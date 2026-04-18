@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import useAuth from '../lib/useAuth'
 import Layout from '../components/Layout'
 import StatusBadge from '../components/StatusBadge'
+import EmptyState from '../components/EmptyState'
 import toast from 'react-hot-toast'
 import { ArrowLeft, Mail, Phone, MapPin, FileText, StickyNote, Receipt } from 'lucide-react'
 
@@ -157,15 +158,12 @@ export default function ClientDetail() {
           </h2>
         </div>
         {devis.length === 0 ? (
-          <div className="p-8 text-center text-gray-400">
-            <p>Aucun devis pour ce client</p>
-            <button
-              onClick={() => navigate('/devis/nouveau')}
-              className="text-primary-600 hover:underline font-medium text-sm mt-2"
-            >
-              Creer un devis
-            </button>
-          </div>
+          <EmptyState
+            compact
+            icon={FileText}
+            title="Aucun devis pour ce client"
+            action={{ label: 'Créer un devis', onClick: () => navigate('/devis/nouveau') }}
+          />
         ) : (
           <div className="divide-y">
             {devis.map((d) => (
@@ -196,9 +194,11 @@ export default function ClientDetail() {
           </h2>
         </div>
         {factures.length === 0 ? (
-          <div className="p-8 text-center text-gray-400">
-            <p>Aucune facture pour ce client</p>
-          </div>
+          <EmptyState
+            compact
+            icon={Receipt}
+            title="Aucune facture pour ce client"
+          />
         ) : (
           <div className="divide-y">
             {factures.map((f) => (

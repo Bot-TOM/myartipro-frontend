@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import useAuth from '../lib/useAuth'
 import Layout from '../components/Layout'
 import api from '../lib/api'
+import { toastApiError } from '../lib/toastApiError'
 import toast from 'react-hot-toast'
 import useOnline from '../lib/useOnline'
 import { enqueueRequest } from '../lib/offlineQueue'
@@ -107,11 +108,7 @@ export default function NewDevis() {
       toast.success('Devis créé avec succès')
       navigate('/devis')
     } catch (err) {
-      const detail = err.response?.data?.detail
-      const msg = Array.isArray(detail)
-        ? detail.map((d) => d.msg).join(', ')
-        : detail || err.message || 'Erreur lors de la création'
-      toast.error(msg)
+      toastApiError(err, 'Erreur lors de la création')
       setSaving(false)
     }
   }

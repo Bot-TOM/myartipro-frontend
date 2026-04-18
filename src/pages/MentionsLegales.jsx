@@ -10,48 +10,48 @@ export default function MentionsLegales() {
           Retour
         </Link>
 
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Mentions legales</h1>
-        <p className="text-gray-400 text-sm mb-8">Derniere mise a jour : avril 2026</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Mentions légales</h1>
+        <p className="text-gray-400 text-sm mb-8">Dernière mise à jour : avril 2026</p>
 
         <div className="bg-white rounded-xl border p-6 sm:p-8 space-y-8 text-sm text-gray-700 leading-relaxed">
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">1. Editeur du site</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">1. Éditeur du site</h2>
             <p>
               <strong>MyArtipro</strong><br />
               [Nom de votre entreprise ou votre nom complet]<br />
               [Adresse postale]<br />
-              [Numero SIRET]<br />
+              [Numéro SIRET]<br />
               Email : [votre email de contact]<br />
-              Telephone : [votre numero]
+              Téléphone : [votre numéro]
             </p>
             <p className="mt-2 text-gray-400 italic">
-              A completer avec vos informations reelles avant mise en production.
+              À compléter avec vos informations réelles avant mise en production.
             </p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">2. Hebergement</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">2. Hébergement</h2>
             <p>
-              Le site est heberge par :<br />
-              [Nom de l'hebergeur — ex: Vercel, Railway, OVH]<br />
-              [Adresse de l'hebergeur]
+              Le site est hébergé par :<br />
+              [Nom de l'hébergeur — ex : Vercel, Railway, OVH]<br />
+              [Adresse de l'hébergeur]
             </p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">3. Protection des donnees personnelles (RGPD)</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">3. Protection des données personnelles (RGPD)</h2>
             <p>
-              MyArtipro collecte et traite des donnees personnelles dans le cadre de son activite :
-              noms, emails, telephones et adresses de vos clients, ainsi que vos informations
+              MyArtipro collecte et traite des données personnelles dans le cadre de son activité :
+              noms, emails, téléphones et adresses de vos clients, ainsi que vos informations
               professionnelles (SIRET, entreprise).
             </p>
             <p className="mt-2">
-              Ces donnees sont stockees de maniere securisee sur les serveurs de Supabase
-              (Union Europeenne) et ne sont accessibles qu'a vous, l'utilisateur authentifie.
+              Ces données sont stockées de manière sécurisée sur les serveurs de Supabase
+              (Union européenne) et ne sont accessibles qu'à vous, l'utilisateur authentifié.
             </p>
             <p className="mt-2">
-              Conformement au RGPD, vous disposez d'un droit d'acces, de modification et de
-              suppression de vos donnees. Pour exercer ces droits, contactez-nous a
+              Conformément au RGPD, vous disposez d'un droit d'accès, de modification et de
+              suppression de vos données. Pour exercer ces droits, contactez-nous à
               [votre email de contact].
             </p>
           </section>
@@ -59,26 +59,26 @@ export default function MentionsLegales() {
           <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">4. Cookies</h2>
             <p>
-              MyArtipro utilise uniquement des cookies techniques necessaires au fonctionnement
+              MyArtipro utilise uniquement des cookies techniques nécessaires au fonctionnement
               de l'application (session d'authentification). Aucun cookie publicitaire ou de tracking
-              n'est utilise.
+              n'est utilisé.
             </p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">5. Propriete intellectuelle</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">5. Propriété intellectuelle</h2>
             <p>
               L'ensemble du contenu de ce site (textes, images, interface, code source) est
-              la propriete de l'editeur. Toute reproduction non autorisee est interdite.
+              la propriété de l'éditeur. Toute reproduction non autorisée est interdite.
             </p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">6. Responsabilite</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">6. Responsabilité</h2>
             <p>
-              MyArtipro est un outil d'aide a la gestion. Les devis et factures generes par
-              l'application sont sous la responsabilite de l'utilisateur. MyArtipro ne peut etre
-              tenu responsable d'erreurs dans les documents generes.
+              MyArtipro est un outil d'aide à la gestion. Les devis et factures générés par
+              l'application sont sous la responsabilité de l'utilisateur. MyArtipro ne peut être
+              tenu responsable d'erreurs dans les documents générés.
             </p>
           </section>
         </div>

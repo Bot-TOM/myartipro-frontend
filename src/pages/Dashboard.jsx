@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import useAuth from '../lib/useAuth'
 import Layout from '../components/Layout'
+import { SkeletonStat, SkeletonLine, SkeletonBlock } from '../components/Skeleton'
 import { FileText, Users, Plus, Receipt, AlertCircle, TrendingUp, Bell, Zap, Clock, ArrowRight, CheckCircle } from 'lucide-react'
 
 export default function Dashboard() {
@@ -106,7 +107,27 @@ export default function Dashboard() {
   const moisLabel = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
 
   if (loading) {
-    return <Layout><p className="text-gray-400">Chargement...</p></Layout>
+    return (
+      <Layout>
+        <div className="flex items-center justify-between mb-6">
+          <div className="space-y-2">
+            <SkeletonLine className="w-48 h-6" />
+            <SkeletonLine className="w-32" />
+          </div>
+          <SkeletonBlock className="w-28 h-10 rounded-lg" />
+        </div>
+        <SkeletonBlock className="w-full h-20 rounded-xl mb-5" />
+        <div className="grid grid-cols-2 gap-4 mb-5">
+          <SkeletonStat />
+          <SkeletonStat />
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <SkeletonStat />
+          <SkeletonStat />
+          <SkeletonStat />
+        </div>
+      </Layout>
+    )
   }
 
   return (

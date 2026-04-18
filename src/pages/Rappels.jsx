@@ -5,7 +5,10 @@ import Layout from '../components/Layout'
 import Modal from '../components/Modal'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
-import { Plus, Trash2, Check, Circle, Calendar, User, Clock } from 'lucide-react'
+import { toastApiError } from '../lib/toastApiError'
+import { SkeletonCardList } from '../components/Skeleton'
+import EmptyState from '../components/EmptyState'
+import { Plus, Trash2, Check, Circle, Calendar, User, Clock, Bell } from 'lucide-react'
 
 export default function Rappels() {
   const { user } = useAuth()
@@ -35,8 +38,8 @@ export default function Rappels() {
     try {
       const res = await api.get('/rappels')
       setRappels(res.data || [])
-    } catch {
-      toast.error('Erreur chargement rappels')
+    } catch (err) {
+      toastApiError(err, 'Erreur chargement rappels')
     }
     setLoading(false)
   }
@@ -78,7 +81,7 @@ export default function Rappels() {
       setModalOpen(false)
       loadRappels()
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Erreur lors de la création')
+      toastApiError(err, 'Erreur lors de la création')
     }
     setSaving(false)
   }
@@ -88,8 +91,8 @@ export default function Rappels() {
       await api.put(`/rappels/${rappel.id}`, { fait: !rappel.fait })
       toast.success(rappel.fait ? 'Rappel réactivé' : 'Marqué comme fait')
       loadRappels()
-    } catch {
-      toast.error('Erreur')
+    } catch (err) {
+      toastApiError(err, 'Erreur lors de la mise à jour')
     }
   }
 
@@ -99,8 +102,8 @@ export default function Rappels() {
       await api.delete(`/rappels/${id}`)
       toast.success('Rappel supprimé')
       loadRappels()
-    } catch {
-      toast.error('Erreur')
+    } catch (err) {
+      toastApiError(err, 'Erreur lors de la suppression')
     }
   }
 
@@ -191,22 +194,26 @@ export default function Rappels() {
       </div>
 
       {loading ? (
-        <p className="text-gray-400">Chargement...</p>
+        <SkeletonCardList count={3} />
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border">
-          <p className="text-gray-400 mb-4">
-            {filter === 'a_faire'
+        <EmptyState
+          icon={filter === 'fait' ? Check : Bell}
+          title={
+            filter === 'a_faire'
               ? 'Aucun rappel en attente'
               : filter === 'fait'
               ? 'Aucun rappel terminé'
-              : 'Aucun rappel'}
-          </p>
-          {filter === 'a_faire' && (
-            <button onClick={openNew} className="text-primary-600 hover:underline font-medium text-sm">
-              Créer un rappel
-            </button>
-          )}
-        </div>
+              : 'Aucun rappel'
+          }
+          description={
+            filter === 'a_faire'
+              ? 'Planifiez vos relances et rendez-vous clients'
+              : filter === 'fait'
+              ? 'Les rappels que vous cochez apparaîtront ici'
+              : 'Créez un rappel pour ne rien oublier'
+          }
+          action={filter !== 'fait' ? { label: 'Créer un rappel', onClick: openNew } : undefined}
+        />
       ) : (
         <div className="space-y-6">
           {sortedDates.map((date) => (

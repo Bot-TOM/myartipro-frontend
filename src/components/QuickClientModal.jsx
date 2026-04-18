@@ -43,7 +43,7 @@ export default function QuickClientModal({ isOpen, onClose, userId, onClientCrea
     setSaving(false)
 
     if (error) {
-      toast.error('Erreur lors de la création du client')
+      toast.error(error.message || 'Erreur lors de la création du client')
       return
     }
 

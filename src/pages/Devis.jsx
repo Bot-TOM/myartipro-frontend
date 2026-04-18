@@ -3,10 +3,13 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import useAuth from '../lib/useAuth'
 import api from '../lib/api'
 import { downloadPdf } from '../lib/downloadPdf'
+import { toastApiError } from '../lib/toastApiError'
 import Layout from '../components/Layout'
 import StatusBadge from '../components/StatusBadge'
+import { SkeletonCardList, SkeletonTableRow } from '../components/Skeleton'
+import EmptyState from '../components/EmptyState'
 import toast from 'react-hot-toast'
-import { Plus, Send, Download, Trash2, Pencil, FileCheck, Clock, AlertTriangle, Zap } from 'lucide-react'
+import { Plus, Send, Download, Trash2, Pencil, FileCheck, Clock, AlertTriangle, Zap, FileText } from 'lucide-react'
 
 export default function Devis() {
   const navigate = useNavigate()
@@ -30,8 +33,8 @@ export default function Devis() {
     try {
       const { data } = await api.get('/devis')
       setDevisList(data || [])
-    } catch {
-      toast.error('Erreur lors du chargement des devis')
+    } catch (err) {
+      toastApiError(err, 'Erreur lors du chargement des devis')
     }
     setLoading(false)
   }
@@ -50,7 +53,7 @@ export default function Devis() {
       toast.success('Devis envoyé par email !')
       loadDevis()
     } catch (err) {
-      toast.error(err.response?.data?.detail || "Erreur lors de l'envoi")
+      toastApiError(err, "Erreur lors de l'envoi")
     }
   }
 
@@ -64,7 +67,7 @@ export default function Devis() {
       toast.success('Devis supprimé')
       loadDevis()
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Erreur lors de la suppression')
+      toastApiError(err, 'Erreur lors de la suppression')
     }
   }
 
@@ -75,7 +78,7 @@ export default function Devis() {
       toast.success('Facture créée avec succès')
       loadDevis()
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Erreur lors de la conversion')
+      toastApiError(err, 'Erreur lors de la conversion')
     }
   }
 
@@ -181,14 +184,27 @@ export default function Devis() {
       </div>
 
       {loading ? (
-        <p className="text-gray-400">Chargement...</p>
+        <>
+          <div className="md:hidden">
+            <SkeletonCardList count={4} />
+          </div>
+          <div className="hidden md:block bg-white rounded-xl border overflow-hidden">
+            <table className="w-full">
+              <tbody>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <SkeletonTableRow key={i} cols={8} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border">
-          <p className="text-gray-400 mb-4">Aucun devis</p>
-          <Link to="/devis/nouveau" className="text-primary-600 hover:underline font-medium text-sm">
-            Créer votre premier devis
-          </Link>
-        </div>
+        <EmptyState
+          icon={FileText}
+          title={filter === 'tous' ? 'Aucun devis' : 'Aucun devis avec ce filtre'}
+          description={filter === 'tous' ? 'Créez votre premier devis pour démarrer' : 'Essayez un autre filtre'}
+          action={filter === 'tous' ? { label: 'Créer un devis', onClick: () => navigate('/devis/nouveau') } : undefined}
+        />
       ) : (
         <>
           {/* Vue mobile : cartes */}

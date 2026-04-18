@@ -77,7 +77,7 @@ export default function Login() {
 
           <div className="text-center space-y-2">
             <Link to="/mot-de-passe-oublie" className="text-sm text-gray-400 hover:text-primary-600 hover:underline">
-              Mot de passe oublie ?
+              Mot de passe oublié ?
             </Link>
             <p className="text-sm text-gray-500">
               Pas encore de compte ?{' '}

@@ -39,23 +39,23 @@ export default function ForgotPassword() {
             <>
               <div className="text-center py-4">
                 <div className="text-4xl mb-4">📧</div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">Email envoye</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">Email envoyé</h2>
                 <p className="text-gray-500 text-sm">
-                  Si un compte existe avec l'adresse <strong>{email}</strong>, vous recevrez un lien pour reinitialiser votre mot de passe.
+                  Si un compte existe avec l'adresse <strong>{email}</strong>, vous recevrez un lien pour réinitialiser votre mot de passe.
                 </p>
               </div>
               <Link
                 to="/login"
                 className="block w-full text-center bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 rounded-lg transition text-base"
               >
-                Retour a la connexion
+                Retour à la connexion
               </Link>
             </>
           ) : (
             <>
-              <h2 className="text-xl font-semibold text-gray-900">Mot de passe oublie</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Mot de passe oublié</h2>
               <p className="text-sm text-gray-500">
-                Entrez votre email et nous vous enverrons un lien pour reinitialiser votre mot de passe.
+                Entrez votre email et nous vous enverrons un lien pour réinitialiser votre mot de passe.
               </p>
 
               {error && (
@@ -86,7 +86,7 @@ export default function ForgotPassword() {
 
               <p className="text-center text-sm text-gray-500">
                 <Link to="/login" className="text-primary-600 hover:underline font-medium">
-                  Retour a la connexion
+                  Retour à la connexion
                 </Link>
               </p>
             </>

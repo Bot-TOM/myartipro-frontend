@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import useAuth from '../lib/useAuth'
 import Layout from '../components/Layout'
 import api from '../lib/api'
+import { toastApiError } from '../lib/toastApiError'
 import toast from 'react-hot-toast'
 import useOnline from '../lib/useOnline'
 import { enqueueRequest } from '../lib/offlineQueue'
@@ -152,7 +153,7 @@ export default function EditDevis() {
       toast.success('Devis modifié avec succès')
       navigate('/devis')
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Erreur lors de la modification')
+      toastApiError(err, 'Erreur lors de la modification')
       setSaving(false)
     }
   }

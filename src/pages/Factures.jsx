@@ -5,8 +5,11 @@ import Layout from '../components/Layout'
 import StatusBadge from '../components/StatusBadge'
 import api, { API_URL } from '../lib/api'
 import { downloadPdf } from '../lib/downloadPdf'
+import { toastApiError } from '../lib/toastApiError'
+import { SkeletonCardList, SkeletonTableRow } from '../components/Skeleton'
+import EmptyState from '../components/EmptyState'
 import toast from 'react-hot-toast'
-import { Download, Trash2, CheckCircle, CreditCard, Copy, FileSpreadsheet } from 'lucide-react'
+import { Download, Trash2, CheckCircle, CreditCard, Copy, FileSpreadsheet, Receipt } from 'lucide-react'
 
 export default function Factures() {
   const { user } = useAuth()
@@ -23,8 +26,8 @@ export default function Factures() {
     try {
       const { data } = await api.get('/factures')
       setFactures(data || [])
-    } catch {
-      toast.error('Erreur lors du chargement des factures')
+    } catch (err) {
+      toastApiError(err, 'Erreur lors du chargement des factures')
     }
     setLoading(false)
   }
@@ -40,8 +43,8 @@ export default function Factures() {
       })
       toast.success('Facture marquée comme payée')
       loadFactures()
-    } catch {
-      toast.error('Erreur lors de la mise à jour')
+    } catch (err) {
+      toastApiError(err, 'Erreur lors de la mise à jour')
     }
   }
 
@@ -51,8 +54,8 @@ export default function Factures() {
       await api.delete(`/factures/${factureId}`)
       toast.success('Facture supprimée')
       loadFactures()
-    } catch {
-      toast.error('Erreur lors de la suppression')
+    } catch (err) {
+      toastApiError(err, 'Erreur lors de la suppression')
     }
   }
 
@@ -63,7 +66,7 @@ export default function Factures() {
       toast.success('Lien de paiement copié dans le presse-papier')
       loadFactures()
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Erreur lors de la génération du lien')
+      toastApiError(err, 'Erreur lors de la génération du lien')
     }
   }
 
@@ -150,12 +153,26 @@ export default function Factures() {
       </div>
 
       {loading ? (
-        <p className="text-gray-400">Chargement...</p>
+        <>
+          <div className="md:hidden">
+            <SkeletonCardList count={4} />
+          </div>
+          <div className="hidden md:block bg-white rounded-xl border overflow-hidden">
+            <table className="w-full">
+              <tbody>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <SkeletonTableRow key={i} cols={7} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border">
-          <p className="text-gray-400 mb-2">Aucune facture</p>
-          <p className="text-sm text-gray-400">Convertissez un devis envoyé ou accepté en facture</p>
-        </div>
+        <EmptyState
+          icon={Receipt}
+          title="Aucune facture"
+          description="Convertissez un devis envoyé ou accepté en facture depuis la page Devis"
+        />
       ) : (
         <>
           {/* Vue mobile */}

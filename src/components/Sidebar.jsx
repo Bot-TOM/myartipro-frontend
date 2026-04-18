@@ -56,14 +56,14 @@ export default function Sidebar({ onNavigate }) {
           className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 w-full transition"
         >
           <LogOut size={18} />
-          Deconnexion
+          Déconnexion
         </button>
         <NavLink
           to="/mentions-legales"
           onClick={handleClick}
           className="block px-4 py-1.5 text-xs text-gray-400 hover:text-gray-600 transition"
         >
-          Mentions legales
+          Mentions légales
         </NavLink>
       </div>
     </aside>

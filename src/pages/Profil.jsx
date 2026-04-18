@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import useAuth from '../lib/useAuth'
 import Layout from '../components/Layout'
 import api from '../lib/api'
+import { toastApiError } from '../lib/toastApiError'
 import toast from 'react-hot-toast'
 import { User, Building2, Phone, MapPin, CreditCard, Save, ImagePlus, Trash2, Wallet, ToggleLeft, ToggleRight } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -52,8 +53,8 @@ export default function Profil() {
           moyens_paiement: p.moyens_paiement || [],
           instructions_paiement: p.instructions_paiement || '',
         })
-      } catch {
-        toast.error('Erreur chargement du profil')
+      } catch (err) {
+        toastApiError(err, 'Erreur chargement du profil')
       }
       setLoading(false)
     }
@@ -71,7 +72,7 @@ export default function Profil() {
       await api.put('/auth/me', form)
       toast.success('Profil mis à jour')
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Erreur lors de la mise à jour')
+      toastApiError(err, 'Erreur lors de la mise à jour')
     }
     setSaving(false)
   }

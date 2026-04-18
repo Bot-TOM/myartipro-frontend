@@ -5,8 +5,11 @@ import useAuth from '../lib/useAuth'
 import Layout from '../components/Layout'
 import Modal from '../components/Modal'
 import api from '../lib/api'
+import { toastApiError } from '../lib/toastApiError'
+import { SkeletonCardList } from '../components/Skeleton'
+import EmptyState from '../components/EmptyState'
 import toast from 'react-hot-toast'
-import { Plus, Pencil, Trash2, Phone, Mail, MapPin, Search, StickyNote } from 'lucide-react'
+import { Plus, Pencil, Trash2, Phone, Mail, MapPin, Search, StickyNote, Users } from 'lucide-react'
 
 const emptyClient = { nom: '', prenom: '', email: '', telephone: '', adresse: '', notes: '' }
 
@@ -73,11 +76,7 @@ export default function Clients() {
       setModalOpen(false)
       loadClients(user.id)
     } catch (err) {
-      const detail = err.response?.data?.detail
-      const msg = Array.isArray(detail)
-        ? detail.map((d) => d.msg).join(', ')
-        : detail || err.message || 'Erreur lors de la sauvegarde'
-      toast.error(msg)
+      toastApiError(err, 'Erreur lors de la sauvegarde')
     }
     setSaving(false)
   }
@@ -89,9 +88,7 @@ export default function Clients() {
       toast.success('Client supprimé')
       loadClients(user.id)
     } catch (err) {
-      const detail = err.response?.data?.detail
-      const msg = Array.isArray(detail) ? detail.map((d) => d.msg).join(', ') : detail || err.message || 'Erreur lors de la suppression'
-      toast.error(msg)
+      toastApiError(err, 'Erreur lors de la suppression')
     }
   }
 
@@ -137,26 +134,21 @@ export default function Clients() {
       )}
 
       {loading ? (
-        <p className="text-gray-400">Chargement...</p>
+        <SkeletonCardList count={4} />
       ) : clients.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border">
-          <p className="text-gray-400 mb-4">Aucun client pour le moment</p>
-          <button onClick={openNew} className="text-primary-600 hover:underline font-medium text-sm">
-            Ajouter votre premier client
-          </button>
-        </div>
+        <EmptyState
+          icon={Users}
+          title="Aucun client pour le moment"
+          description="Ajoutez vos clients pour créer des devis et factures"
+          action={{ label: 'Ajouter un client', onClick: openNew }}
+        />
       ) : filtered.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-xl border">
-          <p className="text-gray-400">Aucun client trouvé</p>
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="text-primary-600 hover:underline text-sm mt-2 block mx-auto"
-            >
-              Effacer la recherche
-            </button>
-          )}
-        </div>
+        <EmptyState
+          icon={Search}
+          title="Aucun client trouvé"
+          description={search ? `Aucun résultat pour "${search}"` : undefined}
+          action={search ? { label: 'Effacer la recherche', onClick: () => setSearch('') } : undefined}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((client) => (
