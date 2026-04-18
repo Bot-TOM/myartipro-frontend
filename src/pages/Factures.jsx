@@ -6,6 +6,7 @@ import Layout from '../components/Layout'
 import StatusBadge from '../components/StatusBadge'
 import api, { API_URL } from '../lib/api'
 import { downloadPdf } from '../lib/downloadPdf'
+import { shareLink } from '../lib/shareLink'
 import { toastApiError } from '../lib/toastApiError'
 import { SkeletonCardList, SkeletonTableRow } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
@@ -69,22 +70,23 @@ export default function Factures() {
   const handleGenererLienPaiement = async (factureId) => {
     try {
       const { data } = await api.post(`/stripe/checkout/${factureId}`)
-      await navigator.clipboard.writeText(data.checkout_url)
-      toast.success('Lien de paiement copié dans le presse-papier')
+      await shareLink(data.checkout_url, {
+        title: 'Lien de paiement',
+        text: 'Voici le lien pour régler votre facture :',
+        successMsg: 'Lien de paiement copié',
+      })
       loadFactures()
     } catch (err) {
       toastApiError(err, 'Erreur lors de la génération du lien')
     }
   }
 
-  const handleCopierLien = async (url) => {
-    try {
-      await navigator.clipboard.writeText(url)
-      toast.success('Lien copié dans le presse-papier')
-    } catch {
-      toast.error('Impossible de copier le lien')
-    }
-  }
+  const handleCopierLien = (url) =>
+    shareLink(url, {
+      title: 'Lien de paiement',
+      text: 'Voici le lien pour régler votre facture :',
+      successMsg: 'Lien copié',
+    })
 
   const filtered = filter === 'tous'
     ? factures
