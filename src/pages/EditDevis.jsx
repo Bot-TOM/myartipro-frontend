@@ -28,6 +28,7 @@ export default function EditDevis() {
     client_id: '',
     titre: '',
     tva: 20,
+    acompte_pct: 0,
     notes: '',
     date_validite: '',
     urgence: 'normal',
@@ -67,6 +68,7 @@ export default function EditDevis() {
         client_id: devis.client_id,
         titre: devis.titre || '',
         tva: devis.tva ?? 20,
+        acompte_pct: devis.acompte_pct ?? 0,
         notes: devis.notes || '',
         date_validite: devis.date_validite ? devis.date_validite.slice(0, 10) : '',
         urgence: devis.urgence || 'normal',
@@ -135,6 +137,7 @@ export default function EditDevis() {
         prix_unitaire: parseFloat(p.prix_unitaire) || 0,
       })),
       tva: parseFloat(form.tva) || 20,
+      acompte_pct: parseInt(form.acompte_pct) || 0,
       date_validite: form.date_validite || null,
       notes: form.notes || null,
       urgence: form.urgence || 'normal',
@@ -248,6 +251,25 @@ export default function EditDevis() {
                 className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-base"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Acompte à la commande
+              <span className="ml-1 text-xs font-normal text-gray-400">(optionnel)</span>
+            </label>
+            <select
+              value={form.acompte_pct}
+              onChange={(e) => setForm({ ...form, acompte_pct: e.target.value })}
+              className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-base"
+            >
+              <option value={0}>Pas d'acompte</option>
+              <option value={10}>10%</option>
+              <option value={20}>20%</option>
+              <option value={30}>30%</option>
+              <option value={40}>40%</option>
+              <option value={50}>50%</option>
+            </select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -379,6 +401,18 @@ export default function EditDevis() {
               <div className="flex justify-between text-lg font-bold text-gray-900 border-t pt-2">
                 <span>Total TTC</span><span>{formatEur(montantTTC)}</span>
               </div>
+              {parseInt(form.acompte_pct) > 0 && (
+                <div className="border-t pt-2 mt-1 space-y-1">
+                  <div className="flex justify-between text-sm text-gray-500">
+                    <span>Acompte à la commande ({form.acompte_pct}%)</span>
+                    <span>{formatEur(montantTTC * parseInt(form.acompte_pct) / 100)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-semibold text-gray-800">
+                    <span>Solde à la livraison</span>
+                    <span>{formatEur(montantTTC * (1 - parseInt(form.acompte_pct) / 100))}</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
