@@ -4,6 +4,7 @@ import useAuth from '../lib/useAuth'
 import Layout from '../components/Layout'
 import StatusBadge from '../components/StatusBadge'
 import api, { API_URL } from '../lib/api'
+import { downloadPdf } from '../lib/downloadPdf'
 import toast from 'react-hot-toast'
 import { Download, Trash2, CheckCircle, CreditCard, Copy, FileSpreadsheet } from 'lucide-react'
 
@@ -28,33 +29,8 @@ export default function Factures() {
     setLoading(false)
   }
 
-  const handleDownloadPDF = async (factureId, numero) => {
-    try {
-      const res = await api.get(`/pdf/facture/${factureId}`, { responseType: 'blob' })
-      const blob = new Blob([res.data], { type: 'application/pdf' })
-      const reader = new FileReader()
-      reader.onload = () => {
-        const a = document.createElement('a')
-        a.href = reader.result
-        a.download = `${numero || 'facture'}.pdf`
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-      }
-      reader.readAsDataURL(blob)
-      toast.success('PDF téléchargé !')
-    } catch (err) {
-      let msg = 'Erreur lors du téléchargement du PDF'
-      if (err.response?.data) {
-        try {
-          const text = await err.response.data.text?.() || ''
-          const json = JSON.parse(text)
-          if (json.detail) msg = json.detail
-        } catch {}
-      }
-      toast.error(msg)
-    }
-  }
+  const handleDownloadPDF = (factureId, numero) =>
+    downloadPdf(`/pdf/facture/${factureId}`, `${numero || 'facture'}.pdf`)
 
   const handleMarquerPayee = async (factureId) => {
     try {

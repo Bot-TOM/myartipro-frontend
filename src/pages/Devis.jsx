@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import useAuth from '../lib/useAuth'
 import api from '../lib/api'
+import { downloadPdf } from '../lib/downloadPdf'
 import Layout from '../components/Layout'
 import StatusBadge from '../components/StatusBadge'
 import toast from 'react-hot-toast'
@@ -53,34 +54,8 @@ export default function Devis() {
     }
   }
 
-  const handleDownloadPDF = async (devisId, numero) => {
-    try {
-      const res = await api.get(`/pdf/devis/${devisId}`, { responseType: 'blob' })
-      const blob = new Blob([res.data], { type: 'application/pdf' })
-      // FileReader fonctionne sur iOS Safari contrairement à a.click() avec blob URL
-      const reader = new FileReader()
-      reader.onload = () => {
-        const a = document.createElement('a')
-        a.href = reader.result
-        a.download = `${numero || 'devis'}.pdf`
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-      }
-      reader.readAsDataURL(blob)
-      toast.success('PDF téléchargé !')
-    } catch (err) {
-      let msg = 'Erreur lors du téléchargement du PDF'
-      if (err.response?.data) {
-        try {
-          const text = await err.response.data.text?.() || ''
-          const json = JSON.parse(text)
-          if (json.detail) msg = json.detail
-        } catch {}
-      }
-      toast.error(msg)
-    }
-  }
+  const handleDownloadPDF = (devisId, numero) =>
+    downloadPdf(`/pdf/devis/${devisId}`, `${numero || 'devis'}.pdf`)
 
   const handleDelete = async (devisId) => {
     if (!window.confirm('Supprimer ce devis ?')) return
