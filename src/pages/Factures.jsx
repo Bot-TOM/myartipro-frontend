@@ -19,6 +19,8 @@ export default function Factures() {
   const [factures, setFactures] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('tous')
+  const [exportMois, setExportMois] = useState(new Date().getMonth() + 1)
+  const [exportAnnee, setExportAnnee] = useState(new Date().getFullYear())
 
   // Relance à chaque retour sur la page (location.key change)
   useEffect(() => {
@@ -126,22 +128,46 @@ export default function Factures() {
       </div>
 
       {factures.length > 0 && (
-        <div className="mb-4">
-          <button
-            onClick={async () => {
-              try {
-                const { data: { session } } = await supabase.auth.getSession()
-                const token = session?.access_token
-                window.open(`${API_URL}/factures/export/csv?token=${token}`, '_blank')
-              } catch {
-                toast.error('Erreur export CSV')
-              }
-            }}
-            className="flex items-center gap-2 text-sm text-gray-600 hover:text-primary-600 border border-gray-300 hover:border-primary-500 px-3 py-2 rounded-lg transition"
-          >
-            <FileSpreadsheet size={16} />
-            Exporter CSV (comptable)
-          </button>
+        <div className="mb-4 bg-white border rounded-xl p-4 space-y-3">
+          <p className="text-sm font-medium text-gray-700 flex items-center gap-2">
+            <FileSpreadsheet size={16} className="text-primary-600" />
+            Export comptable (CSV)
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={exportMois}
+              onChange={(e) => setExportMois(Number(e.target.value))}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+            >
+              {['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'].map((m, i) => (
+                <option key={i + 1} value={i + 1}>{m}</option>
+              ))}
+            </select>
+            <select
+              value={exportAnnee}
+              onChange={(e) => setExportAnnee(Number(e.target.value))}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+            >
+              {[new Date().getFullYear() - 1, new Date().getFullYear()].map((a) => (
+                <option key={a} value={a}>{a}</option>
+              ))}
+            </select>
+            <button
+              onClick={async () => {
+                try {
+                  const { data: { session } } = await supabase.auth.getSession()
+                  const token = session?.access_token
+                  window.open(`${API_URL}/factures/export/csv?token=${token}&mois=${exportMois}&annee=${exportAnnee}`, '_blank')
+                } catch {
+                  toast.error('Erreur export CSV')
+                }
+              }}
+              className="flex items-center gap-2 text-sm text-white bg-primary-600 hover:bg-primary-700 px-3 py-2 rounded-lg transition"
+            >
+              <FileSpreadsheet size={16} />
+              Télécharger
+            </button>
+          </div>
         </div>
       )}
 
