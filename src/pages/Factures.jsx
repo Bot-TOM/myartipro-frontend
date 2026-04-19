@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
 import useAuth from '../lib/useAuth'
 import Layout from '../components/Layout'
 import StatusBadge from '../components/StatusBadge'
-import api, { API_URL } from '../lib/api'
+import api from '../lib/api'
 import { downloadPdf } from '../lib/downloadPdf'
 import { shareLink } from '../lib/shareLink'
 import { toastApiError } from '../lib/toastApiError'
@@ -155,9 +154,34 @@ export default function Factures() {
             <button
               onClick={async () => {
                 try {
-                  const { data: { session } } = await supabase.auth.getSession()
-                  const token = session?.access_token
-                  window.open(`${API_URL}/factures/export/csv?token=${token}&mois=${exportMois}&annee=${exportAnnee}`, '_blank')
+                  const filename = `factures_${exportAnnee}-${String(exportMois).padStart(2, '0')}.csv`
+                  const res = await api.get(
+                    `/factures/export/csv?mois=${exportMois}&annee=${exportAnnee}`,
+                    { responseType: 'blob' }
+                  )
+                  const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8;' })
+                  const file = new File([blob], filename, { type: 'text/csv' })
+
+                  // Web Share API (iOS PWA)
+                  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                      await navigator.share({ files: [file], title: filename })
+                      return
+                    } catch (err) {
+                      if (err.name === 'AbortError') return
+                    }
+                  }
+
+                  // Fallback desktop
+                  const url = URL.createObjectURL(blob)
+                  const a = document.createElement('a')
+                  a.href = url
+                  a.download = filename
+                  document.body.appendChild(a)
+                  a.click()
+                  document.body.removeChild(a)
+                  setTimeout(() => URL.revokeObjectURL(url), 60000)
+                  toast.success('Export téléchargé')
                 } catch {
                   toast.error('Erreur export CSV')
                 }
