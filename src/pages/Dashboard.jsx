@@ -1,19 +1,35 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import useAuth from '../lib/useAuth'
 import useProfil from '../lib/useProfil'
 import Layout from '../components/Layout'
 import OnboardingChecklist from '../components/OnboardingChecklist'
+import StatusBadge from '../components/StatusBadge'
 import { SkeletonStat, SkeletonLine, SkeletonBlock } from '../components/Skeleton'
-import { FileText, Users, Plus, Receipt, AlertCircle, TrendingUp, Bell, Zap, Clock, ArrowRight, CheckCircle } from 'lucide-react'
+import {
+  FileText, Bell, Receipt, Zap, TrendingUp, AlertCircle, CheckCircle,
+} from 'lucide-react'
+
+const AVATAR_COLORS = ['#6366F1', '#0EA5E9', '#10B981', '#F59E0B', '#EC4899', '#8B5CF6']
+
+const getInitials = (client) =>
+  client ? `${client.prenom?.[0] || ''}${client.nom?.[0] || ''}`.toUpperCase() : '?'
+
+const getClientName = (client) =>
+  client ? `${client.prenom || ''} ${client.nom}`.trim() : '-'
+
+const formatEur = (n) =>
+  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n || 0)
 
 export default function Dashboard() {
   const { user } = useAuth()
   const { profil, isComplete: isProfilComplete } = useProfil()
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [actions, setActions] = useState([])
   const [devisList, setDevisList] = useState([])
+  const [devisRecents, setDevisRecents] = useState([])
   const [stats, setStats] = useState({
     caMois: 0,
     montantImpaye: 0,
@@ -27,78 +43,94 @@ export default function Dashboard() {
     if (!user) return
     const load = async () => {
       try {
-      const today = new Date().toISOString().slice(0, 10)
-      const now = new Date()
-      const debutMois = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+        const today = new Date().toISOString().slice(0, 10)
+        const now = new Date()
+        const debutMois = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
 
-      const [devisRes, clientsRes, facturesRes, rappelsRes, devisUrgentsRes] = await Promise.all([
-        supabase.from('devis').select('statut, montant_ttc').eq('user_id', user.id),
-        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-        supabase.from('factures').select('statut, montant_ttc, date_paiement').eq('user_id', user.id),
-        supabase.from('rappels').select('*, clients(nom, prenom)').eq('user_id', user.id).eq('fait', false).lte('date_rappel', today).order('date_rappel'),
-        supabase.from('devis').select('numero, titre, statut, date_envoi, urgence, clients(nom, prenom)').eq('user_id', user.id).in('statut', ['envoyé', 'relancé']),
-      ])
+        const [devisRes, clientsRes, facturesRes, rappelsRes, devisUrgentsRes] = await Promise.all([
+          supabase
+            .from('devis')
+            .select('id, statut, montant_ttc, titre, numero, clients(nom, prenom)')
+            .eq('user_id', user.id)
+            .order('id', { ascending: false }),
+          supabase
+            .from('clients')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id),
+          supabase
+            .from('factures')
+            .select('statut, montant_ttc, date_paiement')
+            .eq('user_id', user.id),
+          supabase
+            .from('rappels')
+            .select('*, clients(nom, prenom)')
+            .eq('user_id', user.id)
+            .eq('fait', false)
+            .lte('date_rappel', today)
+            .order('date_rappel'),
+          supabase
+            .from('devis')
+            .select('numero, titre, statut, date_envoi, urgence, clients(nom, prenom)')
+            .eq('user_id', user.id)
+            .in('statut', ['envoyé', 'relancé']),
+        ])
 
-      // Actions à faire
-      const actionsList = []
-
-      ;(rappelsRes.data || []).forEach((r) => {
-        const isRetard = r.date_rappel < today
-        actionsList.push({
-          type: 'rappel',
-          icon: Bell,
-          label: r.commentaire,
-          sub: r.clients ? `${r.clients.prenom || ''} ${r.clients.nom}`.trim() : null,
-          urgent: isRetard,
-          badge: isRetard ? 'En retard' : "Aujourd'hui",
-          badgeClass: isRetard ? 'bg-red-100 text-red-600' : 'bg-primary-100 text-primary-600',
-          link: '/rappels',
-        })
-      })
-
-      ;(devisUrgentsRes.data || [])
-        .filter((d) => {
-          if (d.urgence === 'urgent') return true
-          if (d.date_envoi) {
-            const jours = Math.floor((Date.now() - new Date(d.date_envoi).getTime()) / 86400000)
-            return jours >= 3
-          }
-          return false
-        })
-        .forEach((d) => {
+        // Actions urgentes
+        const actionsList = []
+        ;(rappelsRes.data || []).forEach((r) => {
+          const isRetard = r.date_rappel < today
           actionsList.push({
-            type: 'devis',
-            icon: Zap,
-            label: `${d.numero} — ${d.titre}`,
-            sub: d.clients ? `${d.clients.prenom || ''} ${d.clients.nom}`.trim() : null,
-            urgent: true,
-            badge: 'À relancer',
-            badgeClass: 'bg-orange-100 text-orange-600',
-            link: '/devis',
+            type: 'rappel',
+            label: r.commentaire,
+            sub: r.clients ? `${r.clients.prenom || ''} ${r.clients.nom}`.trim() : null,
+            urgent: isRetard,
+            badge: isRetard ? 'Retard' : "Aujourd'hui",
+            link: '/rappels',
           })
         })
+        ;(devisUrgentsRes.data || [])
+          .filter((d) => {
+            if (d.urgence === 'urgent') return true
+            if (d.date_envoi) {
+              return Math.floor((Date.now() - new Date(d.date_envoi).getTime()) / 86400000) >= 3
+            }
+            return false
+          })
+          .forEach((d) => {
+            actionsList.push({
+              type: 'devis',
+              label: `${d.numero} — ${d.titre}`,
+              sub: d.clients ? `${d.clients.prenom || ''} ${d.clients.nom}`.trim() : null,
+              urgent: true,
+              badge: 'À relancer',
+              link: '/devis',
+            })
+          })
+        actionsList.sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0))
+        setActions(actionsList)
 
-      actionsList.sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0))
-      setActions(actionsList)
+        // Devis récents
+        const allDevis = devisRes.data || []
+        setDevisList(allDevis)
+        setDevisRecents(allDevis.slice(0, 3))
 
-      // Stats
-      const facturesList = facturesRes.data || []
-      const facturesPayees = facturesList.filter((f) => f.statut === 'payée')
-      const facturesImpayees = facturesList.filter((f) => f.statut !== 'payée')
+        // Stats
+        const facturesList = facturesRes.data || []
+        const facturesPayees = facturesList.filter((f) => f.statut === 'payée')
+        const facturesImpayees = facturesList.filter((f) => f.statut !== 'payée')
 
-      setDevisList(devisRes.data || [])
-      setStats({
-        caMois: facturesPayees
-          .filter((f) => f.date_paiement && f.date_paiement >= debutMois)
-          .reduce((sum, f) => sum + (f.montant_ttc || 0), 0),
-        montantImpaye: facturesImpayees.reduce((sum, f) => sum + (f.montant_ttc || 0), 0),
-        facturesImpayees: facturesImpayees.length,
-        clients: clientsRes.count || 0,
-        devisTotal: (devisRes.data || []).length,
-        facturesTotal: facturesList.length,
-      })
+        setStats({
+          caMois: facturesPayees
+            .filter((f) => f.date_paiement && f.date_paiement >= debutMois)
+            .reduce((sum, f) => sum + (f.montant_ttc || 0), 0),
+          montantImpaye: facturesImpayees.reduce((sum, f) => sum + (f.montant_ttc || 0), 0),
+          facturesImpayees: facturesImpayees.length,
+          clients: clientsRes.count || 0,
+          devisTotal: allDevis.length,
+          facturesTotal: facturesList.length,
+        })
 
-      setLoading(false)
+        setLoading(false)
       } catch {
         setLoading(false)
       }
@@ -106,30 +138,20 @@ export default function Dashboard() {
     load()
   }, [user])
 
-  const formatEur = (n) =>
-    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n || 0)
-
   const moisLabel = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+  const jourLabel = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+  const urgentCount = actions.filter((a) => a.urgent).length
 
   if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-between mb-6">
-          <div className="space-y-2">
-            <SkeletonLine className="w-48 h-6" />
-            <SkeletonLine className="w-32" />
+        <div className="space-y-4 pt-2">
+          <SkeletonLine className="w-48 h-6" />
+          <SkeletonBlock className="w-full h-32 rounded-2xl" />
+          <div className="grid grid-cols-2 gap-3">
+            <SkeletonStat />
+            <SkeletonStat />
           </div>
-          <SkeletonBlock className="w-28 h-10 rounded-lg" />
-        </div>
-        <SkeletonBlock className="w-full h-20 rounded-xl mb-5" />
-        <div className="grid grid-cols-2 gap-4 mb-5">
-          <SkeletonStat />
-          <SkeletonStat />
-        </div>
-        <div className="grid grid-cols-3 gap-3">
-          <SkeletonStat />
-          <SkeletonStat />
-          <SkeletonStat />
         </div>
       </Layout>
     )
@@ -137,22 +159,48 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <div className="flex items-center justify-between mb-6">
+      {/* Header mobile */}
+      <div className="flex items-center justify-between px-1 pt-2 pb-5 md:hidden">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Tableau de bord</h1>
-          <p className="text-gray-500 mt-0.5 capitalize text-sm">{moisLabel}</p>
+          <p className="text-xs text-slate-500 capitalize">{jourLabel}</p>
+          <h1 className="text-[22px] font-extrabold text-slate-900 tracking-tight leading-tight">
+            Bonjour{profil?.prenom ? `, ${profil.prenom}` : ''} 👋
+          </h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/rappels')}
+            className="relative w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500"
+          >
+            <Bell size={18} />
+            {urgentCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
+            )}
+          </button>
+          <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center">
+            <span className="text-white text-sm font-bold">
+              {profil?.prenom?.[0]}{profil?.nom?.[0]}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Header desktop */}
+      <div className="hidden md:flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Tableau de bord</h1>
+          <p className="text-slate-500 mt-0.5 capitalize text-sm">{moisLabel}</p>
         </div>
         <Link
           to="/devis/nouveau"
-          className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition"
+          className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition"
         >
-          <Plus size={18} />
-          <span className="hidden sm:inline">Nouveau devis</span>
-          <span className="sm:hidden">Devis</span>
+          <FileText size={16} />
+          Nouveau devis
         </Link>
       </div>
 
-      {/* Onboarding — première utilisation */}
+      {/* Onboarding */}
       <OnboardingChecklist
         profil={profil}
         isProfilComplete={isProfilComplete}
@@ -160,104 +208,139 @@ export default function Dashboard() {
         devis={devisList}
       />
 
-      {/* Actions à faire */}
+      {/* Carte urgences */}
       {actions.length > 0 ? (
-        <div className="bg-white rounded-xl border mb-5">
-          <div className="px-5 py-3 border-b flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-              <Clock size={15} className="text-primary-600" />
-              À faire
-              <span className="bg-primary-100 text-primary-700 text-xs font-medium px-2 py-0.5 rounded-full">
-                {actions.length}
-              </span>
-            </h2>
-            <Link to="/rappels" className="text-xs text-primary-600 hover:underline flex items-center gap-1">
-              Voir tout <ArrowRight size={12} />
+        <div
+          className="mx-0 mb-5 rounded-[20px] p-5"
+          style={{ background: 'linear-gradient(135deg, #1B4ED8 0%, #2563EB 100%)' }}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center">
+                <Zap size={14} className="text-white" />
+              </div>
+              <span className="text-[13px] font-semibold text-white/90">À faire maintenant</span>
+            </div>
+            <span className="bg-white/20 rounded-xl px-2.5 py-0.5 text-xs font-bold text-white">
+              {actions.length}
+            </span>
+          </div>
+
+          {actions.slice(0, 5).map((action, i) => (
+            <Link
+              key={i}
+              to={action.link}
+              className="flex items-center gap-2.5 py-2.5 border-t border-white/15"
+            >
+              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${action.urgent ? 'bg-red-300' : 'bg-white/55'}`} />
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-semibold text-white truncate">{action.label}</p>
+                {action.sub && <p className="text-[11px] text-white/70 mt-0.5">{action.sub}</p>}
+              </div>
+              {action.urgent && (
+                <span className="text-[10px] font-bold bg-red-500/35 text-red-200 px-2 py-0.5 rounded flex-shrink-0">
+                  {action.badge}
+                </span>
+              )}
             </Link>
-          </div>
-          <div className="divide-y">
-            {actions.slice(0, 5).map((action, i) => {
-              const Icon = action.icon
-              return (
-                <Link
-                  key={i}
-                  to={action.link}
-                  className="px-5 py-3 flex items-center gap-3 hover:bg-gray-50 transition"
-                >
-                  <div className={`p-1.5 rounded-lg shrink-0 ${action.urgent ? 'bg-red-50 text-red-500' : 'bg-primary-50 text-primary-600'}`}>
-                    <Icon size={15} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-900 truncate">{action.label}</p>
-                    {action.sub && <p className="text-xs text-gray-400">{action.sub}</p>}
-                  </div>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap shrink-0 ${action.badgeClass}`}>
-                    {action.badge}
-                  </span>
-                </Link>
-              )
-            })}
-          </div>
+          ))}
         </div>
       ) : (
-        <div className="bg-green-50 border border-green-200 rounded-xl px-5 py-4 mb-5 flex items-center gap-3">
+        <div className="bg-green-50 border border-green-200 rounded-2xl px-5 py-4 mb-5 flex items-center gap-3">
           <CheckCircle size={18} className="text-green-600 shrink-0" />
-          <p className="text-sm text-green-700 font-medium">Rien à faire pour le moment — tout est à jour ✓</p>
+          <p className="text-sm text-green-700 font-medium">Tout est à jour — rien à faire pour le moment ✓</p>
         </div>
       )}
 
+      {/* Actions rapides — mobile */}
+      <div className="mb-5 md:hidden">
+        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.8px] mb-2.5">Action rapide</p>
+        <div className="flex gap-2.5">
+          {[
+            { label: 'Nouveau devis', icon: FileText,  bg: 'bg-blue-50',   color: 'text-primary-600', to: '/devis/nouveau' },
+            { label: 'Rappel',        icon: Bell,      bg: 'bg-orange-50', color: 'text-orange-600',  to: '/rappels' },
+            { label: 'Facture',       icon: Receipt,   bg: 'bg-green-50',  color: 'text-green-600',   to: '/factures' },
+          ].map((a) => (
+            <Link
+              key={a.label}
+              to={a.to}
+              className="flex-1 bg-white border border-slate-200 rounded-2xl py-3.5 px-2 flex flex-col items-center gap-2"
+            >
+              <div className={`w-11 h-11 rounded-full ${a.bg} flex items-center justify-center ${a.color}`}>
+                <a.icon size={20} />
+              </div>
+              <span className="text-[11px] font-semibold text-slate-800 text-center leading-tight">{a.label}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+
       {/* KPIs */}
-      <div className="grid grid-cols-2 gap-4 mb-5">
-        <Link to="/factures" className="bg-white rounded-xl border p-4 hover:shadow-sm transition">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-gray-500">CA du mois</p>
-            <div className="p-2 rounded-lg bg-green-50">
-              <TrendingUp size={16} className="text-green-600" />
+      <div className="mb-5">
+        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.8px] mb-2.5 md:hidden">
+          Ce mois · {moisLabel}
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <Link to="/factures" className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs text-slate-500">CA encaissé</span>
+              <div className="w-7 h-7 rounded-full bg-green-50 flex items-center justify-center">
+                <TrendingUp size={14} className="text-green-600" />
+              </div>
             </div>
-          </div>
-          <p className="text-xl font-bold text-gray-900">{formatEur(stats.caMois)}</p>
-        </Link>
+            <p className="text-[20px] font-extrabold text-slate-900">{formatEur(stats.caMois)}</p>
+          </Link>
 
-        <Link to="/factures" className="bg-white rounded-xl border p-4 hover:shadow-sm transition">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-gray-500">Impayées</p>
-            <div className={`p-2 rounded-lg ${stats.montantImpaye > 0 ? 'bg-orange-50' : 'bg-gray-50'}`}>
-              <AlertCircle size={16} className={stats.montantImpaye > 0 ? 'text-orange-500' : 'text-gray-400'} />
+          <Link to="/factures" className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs text-slate-500">Impayé</span>
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center ${stats.montantImpaye > 0 ? 'bg-orange-50' : 'bg-slate-100'}`}>
+                <AlertCircle size={14} className={stats.montantImpaye > 0 ? 'text-orange-500' : 'text-slate-400'} />
+              </div>
             </div>
-          </div>
-          <p className={`text-xl font-bold ${stats.montantImpaye > 0 ? 'text-orange-600' : 'text-gray-900'}`}>
-            {formatEur(stats.montantImpaye)}
-          </p>
-          {stats.facturesImpayees > 0 && (
-            <p className="text-xs text-gray-400 mt-0.5">{stats.facturesImpayees} facture{stats.facturesImpayees > 1 ? 's' : ''}</p>
-          )}
-        </Link>
+            <p className={`text-[20px] font-extrabold ${stats.montantImpaye > 0 ? 'text-orange-600' : 'text-slate-900'}`}>
+              {formatEur(stats.montantImpaye)}
+            </p>
+            {stats.facturesImpayees > 0 && (
+              <p className="text-xs text-slate-400 mt-0.5">{stats.facturesImpayees} facture{stats.facturesImpayees > 1 ? 's' : ''}</p>
+            )}
+          </Link>
+        </div>
       </div>
 
-      {/* Compteurs */}
-      <div className="grid grid-cols-3 gap-3">
-        <Link to="/devis" className="bg-white rounded-xl border p-4 text-center hover:shadow-sm transition">
-          <div className="p-2 rounded-lg bg-blue-50 inline-block mb-2">
-            <FileText size={17} className="text-blue-600" />
+      {/* Devis récents */}
+      {devisRecents.length > 0 && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2.5">
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.8px]">Devis récents</p>
+            <Link to="/devis" className="text-[12px] font-semibold text-primary-600">Voir tout →</Link>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{stats.devisTotal}</p>
-          <p className="text-xs text-gray-500 mt-0.5">Devis</p>
-        </Link>
-        <Link to="/factures" className="bg-white rounded-xl border p-4 text-center hover:shadow-sm transition">
-          <div className="p-2 rounded-lg bg-emerald-50 inline-block mb-2">
-            <Receipt size={17} className="text-emerald-600" />
+          <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
+            {devisRecents.map((d, i) => (
+              <Link
+                key={d.id}
+                to="/devis"
+                className={`flex items-center gap-3 px-4 py-3.5 hover:bg-slate-50 transition ${i < devisRecents.length - 1 ? 'border-b border-slate-100' : ''}`}
+              >
+                <div
+                  className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-white text-sm font-bold"
+                  style={{ background: AVATAR_COLORS[i % AVATAR_COLORS.length] }}
+                >
+                  {getInitials(d.clients)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-900 truncate">{d.titre || d.numero}</p>
+                  <p className="text-xs text-slate-500">{getClientName(d.clients)}</p>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="text-sm font-bold text-slate-900">{formatEur(d.montant_ttc)}</p>
+                  <StatusBadge statut={d.statut} />
+                </div>
+              </Link>
+            ))}
           </div>
-          <p className="text-2xl font-bold text-gray-900">{stats.facturesTotal}</p>
-          <p className="text-xs text-gray-500 mt-0.5">Factures</p>
-        </Link>
-        <Link to="/clients" className="bg-white rounded-xl border p-4 text-center hover:shadow-sm transition">
-          <div className="p-2 rounded-lg bg-purple-50 inline-block mb-2">
-            <Users size={17} className="text-purple-600" />
-          </div>
-          <p className="text-2xl font-bold text-gray-900">{stats.clients}</p>
-          <p className="text-xs text-gray-500 mt-0.5">Clients</p>
-        </Link>
-      </div>
+        </div>
+      )}
     </Layout>
   )
 }

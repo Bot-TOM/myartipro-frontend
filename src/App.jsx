@@ -16,6 +16,9 @@ import Profil from './pages/Profil'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import MentionsLegales from './pages/MentionsLegales'
+import PolitiqueConfidentialite from './pages/PolitiqueConfidentialite'
+import ConditionsUtilisation from './pages/ConditionsUtilisation'
+import Conformite from './pages/Conformite'
 import DevisPublic from './pages/DevisPublic'
 
 function App() {
@@ -39,6 +42,9 @@ function App() {
         <Route path="/rappels" element={<Rappels />} />
         <Route path="/profil" element={<Profil />} />
         <Route path="/mentions-legales" element={<MentionsLegales />} />
+        <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
+        <Route path="/conditions-utilisation" element={<ConditionsUtilisation />} />
+        <Route path="/conformite" element={<Conformite />} />
         <Route path="/devis/public/:token" element={<DevisPublic />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

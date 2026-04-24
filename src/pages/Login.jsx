@@ -87,6 +87,12 @@ export default function Login() {
             </p>
           </div>
         </form>
+
+        <div className="mt-6 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-gray-400">
+          <Link to="/mentions-legales" className="hover:text-primary-600 transition">Mentions légales</Link>
+          <Link to="/politique-confidentialite" className="hover:text-primary-600 transition">Confidentialité</Link>
+          <Link to="/conditions-utilisation" className="hover:text-primary-600 transition">CGU</Link>
+        </div>
       </div>
     </div>
   )

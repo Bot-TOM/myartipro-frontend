@@ -183,6 +183,13 @@ export default function Register() {
               Se connecter
             </Link>
           </p>
+
+          <p className="text-center text-xs text-gray-400 leading-relaxed">
+            En créant un compte, vous acceptez nos{' '}
+            <Link to="/conditions-utilisation" className="text-primary-600 hover:underline">CGU</Link>
+            {' '}et notre{' '}
+            <Link to="/politique-confidentialite" className="text-primary-600 hover:underline">politique de confidentialité</Link>.
+          </p>
         </form>
       </div>
     </div>

@@ -1,12 +1,20 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, NavLink, useLocation } from 'react-router-dom'
 import useAuth from '../lib/useAuth'
 import Sidebar from './Sidebar'
-import { Menu, Bell, X } from 'lucide-react'
+import { Bell, X, LayoutDashboard, FileText, Receipt, UserCog } from 'lucide-react'
 import OfflineBanner from './OfflineBanner'
 import { supabase } from '../lib/supabase'
 
-function NotifBell({ notifs, notifOpen, setNotifOpen, notifRef, navigate }) {
+const tabs = [
+  { to: '/',         label: 'Accueil',  icon: LayoutDashboard, end: true },
+  { to: '/devis',    label: 'Devis',    icon: FileText },
+  { to: '/factures', label: 'Factures', icon: Receipt },
+  { to: '/rappels',  label: 'Rappels',  icon: Bell },
+  { to: '/profil',   label: 'Profil',   icon: UserCog },
+]
+
+function NotifDropdown({ notifs, notifOpen, setNotifOpen, notifRef, navigate }) {
   const urgentCount = notifs.filter((n) => n.urgent).length
   const total = notifs.length
 
@@ -42,10 +50,7 @@ function NotifBell({ notifs, notifOpen, setNotifOpen, notifRef, navigate }) {
               {notifs.map((n) => (
                 <button
                   key={n.id}
-                  onClick={() => {
-                    navigate(n.link)
-                    setNotifOpen(false)
-                  }}
+                  onClick={() => { navigate(n.link); setNotifOpen(false) }}
                   className="w-full text-left px-4 py-3 hover:bg-gray-50 transition"
                 >
                   <div className="flex items-start gap-2">
@@ -71,12 +76,11 @@ function NotifBell({ notifs, notifOpen, setNotifOpen, notifRef, navigate }) {
 export default function Layout({ children }) {
   const { user, loading } = useAuth()
   const navigate = useNavigate()
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const location = useLocation()
   const [notifs, setNotifs] = useState([])
   const [notifOpen, setNotifOpen] = useState(false)
   const notifRef = useRef(null)
 
-  // Charger les notifications (rappels du jour/en retard + devis urgents)
   useEffect(() => {
     if (!user) return
     const loadNotifs = async () => {
@@ -97,13 +101,10 @@ export default function Layout({ children }) {
       ])
 
       const items = []
-
-      // Rappels
       ;(rappelsRes.data || []).forEach((r) => {
         const retard = r.date_rappel < today
         items.push({
           id: `rappel-${r.id}`,
-          type: 'rappel',
           text: r.commentaire,
           sub: r.clients ? `${r.clients.prenom || ''} ${r.clients.nom}`.trim() : null,
           urgent: retard,
@@ -111,20 +112,16 @@ export default function Layout({ children }) {
           link: '/rappels',
         })
       })
-
-      // Devis sans reponse > 3 jours
       ;(devisRes.data || []).filter((d) => {
         if (!d.date_envoi) return false
-        const jours = Math.floor((Date.now() - new Date(d.date_envoi).getTime()) / 86400000)
-        return jours >= 3
+        return Math.floor((Date.now() - new Date(d.date_envoi).getTime()) / 86400000) >= 3
       }).forEach((d) => {
         items.push({
           id: `devis-${d.id}`,
-          type: 'devis',
           text: `${d.numero} — ${d.titre}`,
-          sub: 'Sans reponse depuis +3 jours',
+          sub: 'Sans réponse depuis +3 jours',
           urgent: true,
-          label: 'A relancer',
+          label: 'À relancer',
           link: '/devis',
         })
       })
@@ -133,12 +130,10 @@ export default function Layout({ children }) {
     }
 
     loadNotifs()
-    // Refresh toutes les 60s
     const interval = setInterval(loadNotifs, 60000)
     return () => clearInterval(interval)
   }, [user])
 
-  // Fermer le dropdown quand on clique ailleurs
   useEffect(() => {
     const handleClick = (e) => {
       if (notifRef.current && !notifRef.current.contains(e.target)) {
@@ -151,8 +146,8 @@ export default function Layout({ children }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-gray-400">Chargement...</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#EFF2F8]">
+        <p className="text-slate-400">Chargement...</p>
       </div>
     )
   }
@@ -160,48 +155,55 @@ export default function Layout({ children }) {
   if (!user) return null
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar desktop */}
+    <div className="flex min-h-screen bg-[#EFF2F8]">
+      {/* Sidebar desktop uniquement */}
       <div className="hidden md:block">
         <Sidebar />
       </div>
 
-      {/* Overlay mobile */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-40 md:hidden">
-          <div className="fixed inset-0 bg-black/40" onClick={() => setSidebarOpen(false)} />
-          <div className="fixed inset-y-0 left-0 z-50 w-64">
-            <Sidebar onNavigate={() => setSidebarOpen(false)} />
-          </div>
-        </div>
-      )}
-
       {/* Contenu principal */}
       <main className="flex-1 min-w-0">
         <OfflineBanner />
-        {/* Header mobile */}
-        <div className="md:hidden flex items-center justify-between p-4 bg-white border-b">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-            >
-              <Menu size={20} />
-            </button>
-            <h1 className="text-lg font-bold text-primary-600">MyArtipro</h1>
-          </div>
-          <NotifBell notifs={notifs} notifOpen={notifOpen} setNotifOpen={setNotifOpen} notifRef={notifRef} navigate={navigate} />
-        </div>
 
-        {/* Header desktop — cloche en haut a droite */}
+        {/* Header desktop — cloche en haut à droite */}
         <div className="hidden md:flex justify-end p-4 pb-0">
-          <NotifBell notifs={notifs} notifOpen={notifOpen} setNotifOpen={setNotifOpen} notifRef={notifRef} navigate={navigate} />
+          <NotifDropdown
+            notifs={notifs}
+            notifOpen={notifOpen}
+            setNotifOpen={setNotifOpen}
+            notifRef={notifRef}
+            navigate={navigate}
+          />
         </div>
 
-        <div className="p-4 md:px-8 md:pb-8 md:pt-2">
+        <div className="main-content p-4 md:px-8 md:pb-8 md:pt-2">
           {children}
         </div>
       </main>
+
+      {/* Bottom tab bar — mobile uniquement */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 flex border-t border-slate-200 bg-white/95 backdrop-blur-sm pb-safe pt-1.5 md:hidden"
+           style={{ paddingBottom: 'max(1.75rem, env(safe-area-inset-bottom))' }}>
+        {tabs.map(({ to, label, icon: Icon, end }) => {
+          const isActive = end
+            ? location.pathname === to
+            : location.pathname === to || location.pathname.startsWith(to + '/')
+          return (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              className="flex flex-1 flex-col items-center gap-0.5 py-1"
+            >
+              <Icon size={22} className={isActive ? 'text-primary-600' : 'text-slate-400'} />
+              <span className={`text-[10px] ${isActive ? 'font-bold text-primary-600' : 'font-normal text-slate-400'}`}>
+                {label}
+              </span>
+              {isActive && <div className="h-1 w-1 rounded-full bg-primary-600 -mt-0.5" />}
+            </NavLink>
+          )
+        })}
+      </div>
     </div>
   )
 }

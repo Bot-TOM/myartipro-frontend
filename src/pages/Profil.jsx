@@ -34,6 +34,7 @@ export default function Profil() {
     moyens_paiement: [],
     instructions_paiement: '',
     regime_tva: 'franchise',
+    numero_tva: '',
   })
 
   useEffect(() => {
@@ -54,6 +55,7 @@ export default function Profil() {
           moyens_paiement: p.moyens_paiement || [],
           instructions_paiement: p.instructions_paiement || '',
           regime_tva: p.regime_tva || 'franchise',
+          numero_tva: p.numero_tva || '',
         })
       } catch (err) {
         toastApiError(err, 'Erreur chargement du profil')
@@ -362,9 +364,19 @@ export default function Profil() {
           <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
             <Receipt size={18} className="text-primary-600" /> Régime TVA
           </h2>
-          <p className="text-sm text-gray-500">
-            Votre régime fiscal détermine si vous facturez la TVA à vos clients.
-          </p>
+
+          {/* Seuils franchise */}
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 space-y-1">
+            <p className="font-semibold">Seuils 2025 — franchise en base</p>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 mt-1">
+              <span>Prestations de services</span><span className="font-bold">37 500 €/an</span>
+              <span>Vente de marchandises</span><span className="font-bold">85 000 €/an</span>
+            </div>
+            <p className="mt-1.5 text-amber-700">
+              En dessous de ces seuils vous pouvez rester en franchise. Au-dessus, le passage au régime réel est obligatoire.
+            </p>
+          </div>
+
           <div className="space-y-2">
             <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition ${
               form.regime_tva === 'franchise'
@@ -383,7 +395,7 @@ export default function Profil() {
                 <p className="text-sm font-medium text-gray-800">Franchise en base (art. 293 B CGI)</p>
                 <p className="text-xs text-gray-500 mt-0.5">
                   Pas de TVA sur vos factures. La mention "TVA non applicable" est ajoutée automatiquement sur vos PDF.
-                  Regime habituel des auto-entrepreneurs sous le seuil de franchise.
+                  Regime habituel des micro-entrepreneurs sous le seuil de franchise.
                 </p>
               </div>
             </label>
@@ -401,14 +413,37 @@ export default function Profil() {
                 className="mt-0.5 accent-primary-600"
               />
               <div>
-                <p className="text-sm font-medium text-gray-800">Regime réel d'imposition</p>
+                <p className="text-sm font-medium text-gray-800">Régime réel d'imposition</p>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Vous collectez la TVA (20%, 10% ou 5,5%) et la reversez à l'administration.
-                  S'applique si vous avez depassé les seuils ou opté volontairement pour ce régime.
+                  Vous collectez la TVA et la reversez à l'administration. Trois taux selon la nature des travaux :
                 </p>
+                <ul className="text-xs text-gray-500 mt-1.5 space-y-0.5 pl-2">
+                  <li><span className="font-semibold text-gray-700">20%</span> — Taux standard (neuf, commerce, divers)</li>
+                  <li><span className="font-semibold text-gray-700">10%</span> — Rénovation d'un logement de plus de 2 ans</li>
+                  <li><span className="font-semibold text-gray-700">5,5%</span> — Travaux de rénovation énergétique (isolation, pompe à chaleur, VMC…)</li>
+                </ul>
               </div>
             </label>
           </div>
+
+          {/* Numéro TVA intracommunautaire — obligatoire en régime réel */}
+          {form.regime_tva === 'reel' && (
+            <div className="pt-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Numéro TVA intracommunautaire <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={form.numero_tva}
+                onChange={updateField('numero_tva')}
+                placeholder="FR 12 345678901"
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                Obligatoire sur toutes vos factures en régime réel (art. 242 nonies A ann. II CGI). Fourni par l'administration fiscale lors du passage au réel.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Info */}

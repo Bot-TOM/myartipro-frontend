@@ -4,4 +4,12 @@
 
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: #EFF2F8;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding-bottom: 5rem;
+  }
 }
