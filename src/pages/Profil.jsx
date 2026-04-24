@@ -4,7 +4,8 @@ import Layout from '../components/Layout'
 import api from '../lib/api'
 import { toastApiError } from '../lib/toastApiError'
 import toast from 'react-hot-toast'
-import { User, Building2, Phone, MapPin, CreditCard, Save, ImagePlus, Trash2, Wallet, ToggleLeft, ToggleRight, Receipt } from 'lucide-react'
+import { User, Building2, Phone, MapPin, CreditCard, Save, ImagePlus, Trash2, Wallet, ToggleLeft, ToggleRight, Receipt, Bell, BellOff } from 'lucide-react'
+import usePushNotifications from '../lib/usePushNotifications'
 import { supabase } from '../lib/supabase'
 
 const MOYENS = [
@@ -18,6 +19,7 @@ const MOYENS_LABELS = Object.fromEntries(MOYENS.map((m) => [m.value, m.label]))
 
 export default function Profil() {
   const { user } = useAuth()
+  const { supported: pushSupported, subscribed: pushSubscribed, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushNotifications()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -445,6 +447,28 @@ export default function Profil() {
             </div>
           )}
         </div>
+
+        {/* Notifications push */}
+        {pushSupported && (
+          <div className="bg-white rounded-xl border p-5 flex items-center gap-4">
+            <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0">
+              {pushSubscribed ? <Bell size={18} className="text-primary-600" /> : <BellOff size={18} className="text-slate-400" />}
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-gray-900">Notifications push</p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {pushSubscribed ? 'Activées sur cet appareil — devis accepté, paiement reçu, rappels.' : 'Désactivées sur cet appareil.'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={pushSubscribed ? pushUnsubscribe : pushSubscribe}
+              className={`text-sm font-medium px-4 py-2 rounded-lg transition ${pushSubscribed ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-primary-600 text-white hover:bg-primary-700'}`}
+            >
+              {pushSubscribed ? 'Désactiver' : 'Activer'}
+            </button>
+          </div>
+        )}
 
         {/* Info */}
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-700">

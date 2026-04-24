@@ -5,6 +5,7 @@ import useAuth from '../lib/useAuth'
 import useProfil from '../lib/useProfil'
 import Layout from '../components/Layout'
 import OnboardingChecklist from '../components/OnboardingChecklist'
+import PushNotificationBanner from '../components/PushNotificationBanner'
 import StatusBadge from '../components/StatusBadge'
 import { SkeletonStat, SkeletonLine, SkeletonBlock } from '../components/Skeleton'
 import {
@@ -199,6 +200,9 @@ export default function Dashboard() {
           Nouveau devis
         </Link>
       </div>
+
+      {/* Push notifications opt-in */}
+      <PushNotificationBanner />
 
       {/* Onboarding */}
       <OnboardingChecklist
