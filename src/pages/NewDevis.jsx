@@ -8,7 +8,7 @@ import { toastApiError } from '../lib/toastApiError'
 import toast from 'react-hot-toast'
 import useOnline from '../lib/useOnline'
 import { enqueueRequest } from '../lib/offlineQueue'
-import { Plus, Trash2, ArrowLeft, UserPlus, Check } from 'lucide-react'
+import { Plus, Trash2, ArrowLeft, UserPlus, Check, Bookmark, X } from 'lucide-react'
 import QuickClientModal from '../components/QuickClientModal'
 import { PRESTATIONS_TYPES } from '../lib/constants'
 import useProfil from '../lib/useProfil'
@@ -37,6 +37,7 @@ export default function NewDevis() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [showNewClient, setShowNewClient] = useState(false)
+  const [modeles, setModeles] = useState([])
   const online = useOnline()
   const { isComplete: profilComplet, missing: profilMissing, isFranchise } = useProfil()
 
@@ -75,7 +76,22 @@ export default function NewDevis() {
         if (error) { toast.error('Erreur chargement clients'); return }
         setClients(data || [])
       })
+    api.get('/modeles').then(({ data }) => setModeles(data || [])).catch(() => {})
   }, [user])
+
+  const appliquerModele = (m) => {
+    setForm((prev) => ({
+      ...prev,
+      titre: m.titre,
+      tva: m.tva,
+      acompte_pct: m.acompte_pct,
+      notes: m.notes || '',
+      urgence: m.urgence || 'normal',
+      charge: m.charge || '',
+    }))
+    setPrestations(m.prestations.length > 0 ? m.prestations : [{ description: '', quantite: 1, prix_unitaire: 0 }])
+    toast.success(`Modèle "${m.titre}" appliqué`)
+  }
 
   const addPrestation = () => {
     setPrestations([...prestations, { description: '', quantite: 1, prix_unitaire: 0 }])
@@ -195,6 +211,35 @@ export default function NewDevis() {
       {/* ─── Étape 0 : Client + Titre ─── */}
       {step === 0 && (
         <div className="space-y-4">
+
+          {/* Modèles enregistrés */}
+          {modeles.length > 0 && (
+            <div className="bg-white rounded-2xl p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <Bookmark size={14} className="text-amber-500" />
+                <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-[0.6px]">Partir d'un modèle</h2>
+              </div>
+              <div className="space-y-2">
+                {modeles.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => appliquerModele(m)}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 bg-amber-50 border border-amber-100 rounded-xl hover:bg-amber-100 transition text-left"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-amber-200 flex items-center justify-center flex-shrink-0">
+                      <Bookmark size={14} className="text-amber-700" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-800 truncate">{m.titre}</p>
+                      <p className="text-xs text-slate-500">{m.prestations.length} prestation{m.prestations.length > 1 ? 's' : ''} · TVA {m.tva}%</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="bg-white rounded-2xl p-4 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-[0.6px]">Client</h2>

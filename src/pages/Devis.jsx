@@ -11,7 +11,7 @@ import EmptyState from '../components/EmptyState'
 import ProfilIncompletBanner from '../components/ProfilIncompletBanner'
 import useProfil from '../lib/useProfil'
 import toast from 'react-hot-toast'
-import { Plus, Send, Download, Trash2, Pencil, FileCheck, Clock, AlertTriangle, Zap, FileText, Copy } from 'lucide-react'
+import { Plus, Send, Download, Trash2, Pencil, FileCheck, Clock, AlertTriangle, Zap, FileText, Copy, Bookmark } from 'lucide-react'
 
 export default function Devis() {
   const navigate = useNavigate()
@@ -85,6 +85,23 @@ export default function Devis() {
       loadDevis()
     } catch (err) {
       toastApiError(err, 'Erreur lors de la duplication')
+    }
+  }
+
+  const handleSauvegarderModele = async (d) => {
+    try {
+      await api.post('/modeles', {
+        titre: d.titre,
+        prestations: d.prestations,
+        tva: d.tva,
+        acompte_pct: d.acompte_pct || 0,
+        notes: d.notes || null,
+        urgence: d.urgence || 'normal',
+        charge: d.charge || null,
+      })
+      toast.success('Modèle enregistré — disponible lors du prochain devis')
+    } catch (err) {
+      toastApiError(err, "Erreur lors de l'enregistrement du modèle")
     }
   }
 
@@ -266,6 +283,9 @@ export default function Devis() {
                     <button onClick={() => handleDupliquer(d.id)} className="p-2 text-gray-400 hover:text-primary-600 rounded-lg" title="Dupliquer">
                       <Copy size={18} />
                     </button>
+                    <button onClick={() => handleSauvegarderModele(d)} className="p-2 text-gray-400 hover:text-amber-600 rounded-lg" title="Sauvegarder comme modèle">
+                      <Bookmark size={18} />
+                    </button>
                     {d.statut === 'brouillon' && (
                       <button
                         onClick={() => handleEnvoyer(d.id)}
@@ -349,6 +369,9 @@ export default function Devis() {
                         </button>
                         <button onClick={() => handleDupliquer(d.id)} title="Dupliquer" className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition">
                           <Copy size={16} />
+                        </button>
+                        <button onClick={() => handleSauvegarderModele(d)} title="Sauvegarder comme modèle" className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition">
+                          <Bookmark size={16} />
                         </button>
                         {d.statut === 'brouillon' && (
                           <button
