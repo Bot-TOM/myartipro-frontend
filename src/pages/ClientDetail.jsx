@@ -3,10 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import useAuth from '../lib/useAuth'
 import Layout from '../components/Layout'
+import Modal from '../components/Modal'
 import StatusBadge from '../components/StatusBadge'
 import EmptyState from '../components/EmptyState'
+import api from '../lib/api'
+import { toastApiError } from '../lib/toastApiError'
 import toast from 'react-hot-toast'
-import { ArrowLeft, Mail, Phone, MapPin, FileText, StickyNote, Receipt } from 'lucide-react'
+import { ArrowLeft, Mail, Phone, MapPin, FileText, StickyNote, Receipt, Pencil } from 'lucide-react'
 
 export default function ClientDetail() {
   const { id } = useParams()
@@ -16,6 +19,9 @@ export default function ClientDetail() {
   const [devis, setDevis] = useState([])
   const [factures, setFactures] = useState([])
   const [loading, setLoading] = useState(true)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [form, setForm] = useState({})
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -62,6 +68,36 @@ export default function ClientDetail() {
     }
   }
 
+  const openEdit = () => {
+    setForm({
+      nom: client.nom || '',
+      prenom: client.prenom || '',
+      email: client.email || '',
+      telephone: client.telephone || '',
+      adresse: client.adresse || '',
+      notes: client.notes || '',
+    })
+    setModalOpen(true)
+  }
+
+  const handleSave = async (e) => {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      const { data: updated } = await api.put(`/clients/${id}`, form)
+      setClient(updated)
+      setModalOpen(false)
+      toast.success('Client modifié')
+    } catch (err) {
+      toastApiError(err, 'Erreur lors de la sauvegarde')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const updateField = (field) => (e) =>
+    setForm((prev) => ({ ...prev, [field]: e.target.value }))
+
   const formatDate = (dateStr) => {
     if (!dateStr) return '-'
     return new Date(dateStr).toLocaleDateString('fr-FR')
@@ -97,13 +133,24 @@ export default function ClientDetail() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{client.prenom} {client.nom}</h1>
           </div>
-          <a
-            href={`tel:${client.telephone}`}
-            className={`p-2 rounded-lg transition ${client.telephone ? 'text-green-500 hover:text-green-700 hover:bg-green-50' : 'text-gray-200 pointer-events-none'}`}
-            title="Appeler"
-          >
-            <Phone size={18} />
-          </a>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={openEdit}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-lg transition"
+            >
+              <Pencil size={14} />
+              Modifier
+            </button>
+            {client.telephone && (
+              <a
+                href={`tel:${client.telephone}`}
+                className="p-2 text-green-500 hover:text-green-700 hover:bg-green-50 rounded-lg transition"
+                title="Appeler"
+              >
+                <Phone size={18} />
+              </a>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-600">
@@ -225,6 +272,42 @@ export default function ClientDetail() {
           </div>
         )}
       </div>
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Modifier le client">
+        <form onSubmit={handleSave} className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
+              <input type="text" value={form.prenom || ''} onChange={updateField('prenom')} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
+              <input type="text" value={form.nom || ''} onChange={updateField('nom')} required className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input type="email" value={form.email || ''} onChange={updateField('email')} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
+            <input type="tel" value={form.telephone || ''} onChange={updateField('telephone')} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Adresse</label>
+            <input type="text" value={form.adresse || ''} onChange={updateField('adresse')} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <textarea value={form.notes || ''} onChange={updateField('notes')} rows={2} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none resize-none" />
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={() => setModalOpen(false)} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition">Annuler</button>
+            <button type="submit" disabled={saving} className="flex-1 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition disabled:opacity-50">
+              {saving ? 'Enregistrement...' : 'Modifier'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </Layout>
   )
 }

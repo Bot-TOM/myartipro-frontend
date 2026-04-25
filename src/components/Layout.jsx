@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, NavLink, useLocation } from 'react-router-dom'
 import useAuth from '../lib/useAuth'
 import Sidebar from './Sidebar'
-import { Bell, X, LayoutDashboard, FileText, Receipt, UserCog } from 'lucide-react'
+import { Bell, X, LayoutDashboard, FileText, Receipt, UserCog, Users } from 'lucide-react'
 import OfflineBanner from './OfflineBanner'
 import { supabase } from '../lib/supabase'
 
@@ -10,7 +10,7 @@ const tabs = [
   { to: '/',         label: 'Accueil',  icon: LayoutDashboard, end: true },
   { to: '/devis',    label: 'Devis',    icon: FileText },
   { to: '/factures', label: 'Factures', icon: Receipt },
-  { to: '/rappels',  label: 'Rappels',  icon: Bell },
+  { to: '/clients',  label: 'Clients',  icon: Users },
   { to: '/profil',   label: 'Profil',   icon: UserCog },
 ]
 
