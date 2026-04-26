@@ -4,7 +4,7 @@ import Layout from '../components/Layout'
 import api from '../lib/api'
 import { toastApiError } from '../lib/toastApiError'
 import toast from 'react-hot-toast'
-import { User, Building2, Phone, MapPin, CreditCard, Save, ImagePlus, Trash2, Wallet, ToggleLeft, ToggleRight, Receipt, Bell, BellOff, MessageSquare } from 'lucide-react'
+import { User, Building2, Phone, MapPin, CreditCard, Save, ImagePlus, Trash2, Wallet, ToggleLeft, ToggleRight, Receipt, Bell, BellOff, MessageSquare, Download, ShieldAlert } from 'lucide-react'
 import usePushNotifications from '../lib/usePushNotifications'
 import { supabase } from '../lib/supabase'
 
@@ -25,6 +25,9 @@ export default function Profil() {
   const [uploading, setUploading] = useState(false)
   const [testingPush, setTestingPush] = useState(false)
   const [testingSms, setTestingSms] = useState(false)
+  const [exporting, setExporting] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState('')
+  const [deleting, setDeleting] = useState(false)
 
   const [form, setForm] = useState({
     nom: '',
@@ -130,6 +133,40 @@ export default function Profil() {
     await supabase.storage.from('logos').remove([`logos/${user.id}.${ext}`])
     setForm((prev) => ({ ...prev, logo_url: '' }))
     toast.success('Logo supprimé')
+  }
+
+  const handleExportData = async () => {
+    setExporting(true)
+    try {
+      const { data } = await api.get('/auth/me/export')
+      const json = JSON.stringify(data, null, 2)
+      const blob = new Blob([json], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `myartipro_export_${new Date().toISOString().slice(0, 10)}.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(url), 10000)
+      toast.success('Export téléchargé')
+    } catch {
+      toast.error('Erreur lors de l\'export')
+    }
+    setExporting(false)
+  }
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirm !== 'SUPPRIMER') return
+    setDeleting(true)
+    try {
+      await api.delete('/auth/me')
+      await import('../lib/supabase').then(({ supabase }) => supabase.auth.signOut())
+      window.location.href = '/login'
+    } catch {
+      toast.error('Erreur lors de la suppression du compte')
+      setDeleting(false)
+    }
   }
 
   const handleTestSms = async () => {
@@ -584,6 +621,57 @@ export default function Profil() {
           {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
         </button>
       </form>
+
+      {/* Données & compte — hors formulaire */}
+      <div className="space-y-4 max-w-2xl mt-6">
+
+        {/* Export RGPD */}
+        <div className="bg-white rounded-xl border p-5">
+          <h2 className="text-base font-semibold text-slate-900 flex items-center gap-2 mb-1">
+            <Download size={16} className="text-slate-500" /> Mes données
+          </h2>
+          <p className="text-xs text-slate-500 mb-3">
+            Téléchargez l'ensemble de vos données (RGPD — droit à la portabilité, art. 20).
+          </p>
+          <button
+            onClick={handleExportData}
+            disabled={exporting}
+            className="text-sm font-medium text-primary-600 border border-primary-200 bg-primary-50 hover:bg-primary-100 px-4 py-2 rounded-lg transition disabled:opacity-50"
+          >
+            {exporting ? 'Export en cours...' : 'Exporter mes données (JSON)'}
+          </button>
+        </div>
+
+        {/* Suppression de compte */}
+        <div className="bg-white rounded-xl border border-red-200 p-5">
+          <h2 className="text-base font-semibold text-red-700 flex items-center gap-2 mb-1">
+            <ShieldAlert size={16} /> Supprimer mon compte
+          </h2>
+          <p className="text-xs text-slate-500 mb-3">
+            Action irréversible. Toutes vos données seront supprimées, sauf les factures émises/payées
+            conservées 10 ans conformément à l'art. L123-22 du Code de commerce.
+          </p>
+          <p className="text-xs text-slate-600 mb-2 font-medium">
+            Tapez <span className="font-mono bg-slate-100 px-1 rounded">SUPPRIMER</span> pour confirmer :
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={deleteConfirm}
+              onChange={(e) => setDeleteConfirm(e.target.value)}
+              placeholder="SUPPRIMER"
+              className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-red-300 font-mono"
+            />
+            <button
+              onClick={handleDeleteAccount}
+              disabled={deleteConfirm !== 'SUPPRIMER' || deleting}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {deleting ? 'Suppression...' : 'Supprimer'}
+            </button>
+          </div>
+        </div>
+      </div>
     </Layout>
   )
 }

@@ -68,6 +68,7 @@ export default function Sidebar({ onNavigate }) {
             { to: '/mentions-legales', label: 'Mentions légales' },
             { to: '/politique-confidentialite', label: 'Confidentialité' },
             { to: '/conditions-utilisation', label: 'CGU' },
+            { to: '/cgv', label: 'CGV' },
             { to: '/conformite', label: 'Conformité TVA' },
           ].map(({ to, label }) => (
             <NavLink key={to} to={to} onClick={handleClick}
