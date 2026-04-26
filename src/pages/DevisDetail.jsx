@@ -10,7 +10,7 @@ import useProfil from '../lib/useProfil'
 import toast from 'react-hot-toast'
 import {
   ArrowLeft, Pencil, Download, Copy, Send, FileCheck, Trash2,
-  Bookmark, User, CalendarDays, StickyNote, Zap, Clock, AlertTriangle,
+  Bookmark, User, CalendarDays, StickyNote, Zap, Clock, AlertTriangle, RefreshCw,
 } from 'lucide-react'
 
 const formatEur  = (n) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n || 0)
@@ -43,7 +43,8 @@ export default function DevisDetail() {
 
   const [devis, setDevis]           = useState(null)
   const [loading, setLoading]       = useState(true)
-  const [confirmEnvoi, setConfirmEnvoi] = useState(false)
+  const [confirmEnvoi, setConfirmEnvoi]     = useState(false)
+  const [confirmRelance, setConfirmRelance] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -79,6 +80,22 @@ export default function DevisDetail() {
       reload()
     } catch (err) {
       toastApiError(err, "Erreur lors de l'envoi")
+    }
+  }
+
+  const handleRelancer = async () => {
+    if (!confirmRelance) {
+      setConfirmRelance(true)
+      setTimeout(() => setConfirmRelance(false), 4000)
+      return
+    }
+    setConfirmRelance(false)
+    try {
+      await api.post(`/devis/${id}/relancer`)
+      toast.success('Relance envoyée par email !')
+      reload()
+    } catch (err) {
+      toastApiError(err, 'Erreur lors de la relance')
     }
   }
 
@@ -159,6 +176,7 @@ export default function DevisDetail() {
   const chargeCfg = chargeConfig[devis.charge]
 
   const canEnvoyer   = devis.statut === 'brouillon' && !!client.email
+  const canRelancer  = ['envoyé', 'consulté', 'relancé'].includes(devis.statut) && !!client.email
   const canConvertir = ['envoyé', 'consulté', 'accepté', 'relancé'].includes(devis.statut)
 
   return (
@@ -304,6 +322,20 @@ export default function DevisDetail() {
               }`}
             >
               <Send size={16} /> {confirmEnvoi ? 'Confirmer l\'envoi ?' : 'Envoyer par email'}
+            </button>
+          )}
+
+          {canRelancer && (
+            <button
+              onClick={handleRelancer}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition ${
+                confirmRelance
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+              }`}
+            >
+              <RefreshCw size={16} />
+              {confirmRelance ? 'Confirmer la relance ?' : 'Relancer le client'}
             </button>
           )}
 

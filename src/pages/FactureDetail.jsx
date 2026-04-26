@@ -10,7 +10,7 @@ import { SkeletonBlock, SkeletonLine } from '../components/Skeleton'
 import toast from 'react-hot-toast'
 import {
   ArrowLeft, Download, Trash2, CheckCircle, CreditCard,
-  User, CalendarDays, StickyNote,
+  User, CalendarDays, StickyNote, RefreshCw,
 } from 'lucide-react'
 
 const formatEur  = (n) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n || 0)
@@ -39,8 +39,9 @@ export default function FactureDetail() {
 
   const [facture, setFacture]       = useState(null)
   const [loading, setLoading]       = useState(true)
-  const [markingPaid, setMarkingPaid] = useState(false)
-  const [modeReglement, setModeReglement] = useState('virement')
+  const [markingPaid, setMarkingPaid]       = useState(false)
+  const [modeReglement, setModeReglement]   = useState('virement')
+  const [confirmRelance, setConfirmRelance] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -91,6 +92,22 @@ export default function FactureDetail() {
     }
   }
 
+  const handleRelancer = async () => {
+    if (!confirmRelance) {
+      setConfirmRelance(true)
+      setTimeout(() => setConfirmRelance(false), 4000)
+      return
+    }
+    setConfirmRelance(false)
+    try {
+      const { data } = await api.post(`/factures/${id}/relancer`)
+      toast.success(`Relance envoyée (palier ${data.palier}/3)`)
+      reload()
+    } catch (err) {
+      toastApiError(err, 'Erreur lors de la relance')
+    }
+  }
+
   const handleDelete = async () => {
     const message = facture.statut === 'brouillon'
       ? 'Supprimer définitivement cette facture ?'
@@ -120,13 +137,18 @@ export default function FactureDetail() {
 
   if (!facture) return null
 
-  const client      = facture.clients || {}
-  const prestations = facture.prestations || []
-  const ht          = facture.montant_ht  || 0
-  const ttc         = facture.montant_ttc || 0
-  const tva         = facture.tva         || 0
-  const isFranchise = tva === 0
-  const montantTVA  = ttc - ht
+  const client        = facture.clients || {}
+  const prestations   = facture.prestations || []
+  const ht            = facture.montant_ht  || 0
+  const ttc           = facture.montant_ttc || 0
+  const tva           = facture.tva         || 0
+  const isFranchise   = tva === 0
+  const montantTVA    = ttc - ht
+  const relancesCount = facture.relances_count || 0
+
+  const PALIER_LABELS = { 0: '1er rappel', 1: '2e rappel', 2: 'Mise en demeure' }
+  const palierLabel  = PALIER_LABELS[relancesCount] ?? null
+  const canRelancer  = facture.statut === 'émise' && !!client.email && palierLabel !== null
 
   return (
     <Layout>
@@ -284,6 +306,22 @@ export default function FactureDetail() {
                 </button>
               </div>
             </div>
+          )}
+
+          {canRelancer && (
+            <button
+              onClick={handleRelancer}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition ${
+                confirmRelance
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+              }`}
+            >
+              <RefreshCw size={16} />
+              {confirmRelance
+                ? 'Confirmer la relance ?'
+                : `Relancer le client — ${palierLabel}`}
+            </button>
           )}
 
           {facture.statut === 'émise' && (
