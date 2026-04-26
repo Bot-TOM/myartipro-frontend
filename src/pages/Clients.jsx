@@ -13,6 +13,8 @@ import { Plus, Pencil, Trash2, Phone, Mail, MapPin, Search, StickyNote, Users } 
 
 const emptyClient = { nom: '', prenom: '', email: '', telephone: '', adresse: '', notes: '' }
 
+const inputCls = 'w-full px-3 py-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm transition'
+
 export default function Clients() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -58,12 +60,12 @@ export default function Clients() {
   const openEdit = (client) => {
     setEditing(client)
     setForm({
-      nom: client.nom,
-      prenom: client.prenom || '',
-      email: client.email || '',
+      nom:       client.nom,
+      prenom:    client.prenom    || '',
+      email:     client.email     || '',
       telephone: client.telephone || '',
-      adresse: client.adresse || '',
-      notes: client.notes || '',
+      adresse:   client.adresse   || '',
+      notes:     client.notes     || '',
     })
     setModalOpen(true)
   }
@@ -111,14 +113,15 @@ export default function Clients() {
 
   return (
     <Layout>
-      <div className="flex items-center justify-between mb-8">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Clients</h1>
-          <p className="text-gray-500 mt-1">{clients.length} client{clients.length > 1 ? 's' : ''}</p>
+          <h1 className="text-2xl font-bold text-slate-900">Clients</h1>
+          <p className="text-slate-500 mt-0.5 text-sm">{clients.length} client{clients.length > 1 ? 's' : ''}</p>
         </div>
         <button
           onClick={openNew}
-          className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition"
+          className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition"
         >
           <Plus size={18} />
           <span className="hidden sm:inline">Nouveau client</span>
@@ -126,15 +129,16 @@ export default function Clients() {
         </button>
       </div>
 
+      {/* Recherche */}
       {clients.length > 0 && (
         <div className="relative mb-6">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Rechercher un client (nom, email, tel...)"
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm"
+            placeholder="Rechercher (nom, email, téléphone…)"
+            className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm transition"
           />
         </div>
       )}
@@ -152,69 +156,125 @@ export default function Clients() {
         <EmptyState
           icon={Search}
           title="Aucun client trouvé"
-          description={search ? `Aucun résultat pour "${search}"` : undefined}
+          description={search ? `Aucun résultat pour « ${search} »` : undefined}
           action={search ? { label: 'Effacer la recherche', onClick: () => setSearch('') } : undefined}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((client) => (
-            <div key={client.id} className="bg-white rounded-xl border p-5 cursor-pointer hover:shadow-md transition" onClick={() => navigate(`/clients/${client.id}`)}>
+            <div
+              key={client.id}
+              className="bg-white rounded-2xl shadow-sm p-5 cursor-pointer hover:shadow-md transition"
+              onClick={() => navigate(`/clients/${client.id}`)}
+            >
+              {/* Nom + actions */}
               <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h3 className="font-semibold text-gray-900">{client.prenom} {client.nom}</h3>
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-slate-900 truncate">
+                    {client.prenom} {client.nom}
+                  </h3>
                 </div>
-                <div className="flex gap-1">
-                  <button onClick={(e) => { e.stopPropagation(); openEdit(client) }} className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition">
-                    <Pencil size={16} />
+                <div className="flex gap-0.5 ml-2 shrink-0">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); openEdit(client) }}
+                    className="p-1.5 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition"
+                  >
+                    <Pencil size={15} />
                   </button>
-                  <button onClick={(e) => { e.stopPropagation(); handleDelete(client.id) }} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
-                    <Trash2 size={16} />
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDelete(client.id) }}
+                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition"
+                  >
+                    <Trash2 size={15} />
                   </button>
                 </div>
               </div>
-              <div className="space-y-1.5 text-sm text-gray-500">
-                {client.email && <div className="flex items-center gap-2"><Mail size={14} />{client.email}</div>}
-                {client.telephone && <div className="flex items-center gap-2"><Phone size={14} />{client.telephone}</div>}
-                {client.adresse && <div className="flex items-center gap-2"><MapPin size={14} />{client.adresse}</div>}
-                {client.notes && <div className="flex items-start gap-2 text-gray-400 italic"><StickyNote size={14} className="mt-0.5 shrink-0" /><span className="line-clamp-2">{client.notes}</span></div>}
+
+              {/* Infos contact */}
+              <div className="space-y-1.5 text-sm text-slate-500">
+                {client.email && (
+                  <div className="flex items-center gap-2 truncate">
+                    <Mail size={13} className="shrink-0 text-slate-400" />
+                    <span className="truncate">{client.email}</span>
+                  </div>
+                )}
+                {client.telephone && (
+                  <div className="flex items-center gap-2">
+                    <Phone size={13} className="shrink-0 text-slate-400" />
+                    {client.telephone}
+                  </div>
+                )}
+                {client.adresse && (
+                  <div className="flex items-center gap-2 truncate">
+                    <MapPin size={13} className="shrink-0 text-slate-400" />
+                    <span className="truncate">{client.adresse}</span>
+                  </div>
+                )}
+                {client.notes && (
+                  <div className="flex items-start gap-2 text-slate-400 italic">
+                    <StickyNote size={13} className="mt-0.5 shrink-0" />
+                    <span className="line-clamp-2">{client.notes}</span>
+                  </div>
+                )}
               </div>
             </div>
           ))}
         </div>
       )}
 
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Modifier le client' : 'Nouveau client'}>
+      {/* Modal création / édition */}
+      <Modal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={editing ? 'Modifier le client' : 'Nouveau client'}
+      >
         <form onSubmit={handleSave} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
-              <input type="text" value={form.prenom} onChange={updateField('prenom')} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none" />
+              <label className="block text-sm font-medium text-slate-700 mb-1">Prénom</label>
+              <input type="text" value={form.prenom} onChange={updateField('prenom')} className={inputCls} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
-              <input type="text" value={form.nom} onChange={updateField('nom')} required className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none" />
+              <label className="block text-sm font-medium text-slate-700 mb-1">Nom *</label>
+              <input type="text" value={form.nom} onChange={updateField('nom')} required className={inputCls} />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input type="email" value={form.email} onChange={updateField('email')} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none" />
+            <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+            <input type="email" value={form.email} onChange={updateField('email')} className={inputCls} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
-            <input type="tel" value={form.telephone} onChange={updateField('telephone')} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none" />
+            <label className="block text-sm font-medium text-slate-700 mb-1">Téléphone</label>
+            <input type="tel" value={form.telephone} onChange={updateField('telephone')} className={inputCls} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Adresse</label>
-            <input type="text" value={form.adresse} onChange={updateField('adresse')} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none" />
+            <label className="block text-sm font-medium text-slate-700 mb-1">Adresse</label>
+            <input type="text" value={form.adresse} onChange={updateField('adresse')} className={inputCls} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-            <textarea value={form.notes} onChange={updateField('notes')} rows={2} placeholder="Notes internes sur ce client..." className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none resize-none" />
+            <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
+            <textarea
+              value={form.notes}
+              onChange={updateField('notes')}
+              rows={2}
+              placeholder="Notes internes sur ce client…"
+              className={`${inputCls} resize-none`}
+            />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={() => setModalOpen(false)} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition">Annuler</button>
-            <button type="submit" disabled={saving} className="flex-1 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition disabled:opacity-50">
-              {saving ? 'Enregistrement...' : editing ? 'Modifier' : 'Ajouter'}
+            <button
+              type="button"
+              onClick={() => setModalOpen(false)}
+              className="flex-1 px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition disabled:opacity-50"
+            >
+              {saving ? 'Enregistrement…' : editing ? 'Modifier' : 'Ajouter'}
             </button>
           </div>
         </form>
