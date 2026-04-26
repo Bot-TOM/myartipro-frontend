@@ -13,6 +13,17 @@ import useProfil from '../lib/useProfil'
 import toast from 'react-hot-toast'
 import { Plus, Send, Download, Trash2, Pencil, FileCheck, Clock, AlertTriangle, Zap, FileText, Copy, Bookmark } from 'lucide-react'
 
+/** Couleur de la bordure gauche selon le statut */
+const statusAccent = {
+  brouillon: 'border-l-slate-300',
+  envoyé:    'border-l-blue-400',
+  consulté:  'border-l-violet-500',
+  relancé:   'border-l-indigo-500',
+  accepté:   'border-l-green-500',
+  refusé:    'border-l-red-400',
+  facturé:   'border-l-emerald-500',
+}
+
 export default function Devis() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -88,15 +99,11 @@ export default function Devis() {
   const handleSauvegarderModele = async (d) => {
     try {
       await api.post('/modeles', {
-        titre: d.titre,
-        prestations: d.prestations,
-        tva: d.tva,
-        acompte_pct: d.acompte_pct || 0,
-        notes: d.notes || null,
-        urgence: d.urgence || 'normal',
-        charge: d.charge || null,
+        titre: d.titre, prestations: d.prestations, tva: d.tva,
+        acompte_pct: d.acompte_pct || 0, notes: d.notes || null,
+        urgence: d.urgence || 'normal', charge: d.charge || null,
       })
-      toast.success('Modèle enregistré — disponible lors du prochain devis')
+      toast.success('Modèle enregistré')
     } catch (err) {
       toastApiError(err, "Erreur lors de l'enregistrement du modèle")
     }
@@ -117,23 +124,15 @@ export default function Devis() {
     }
   }
 
-  const filtered = filter === 'tous'
-    ? devisList
-    : devisList.filter((d) => d.statut === filter)
+  const filtered = filter === 'tous' ? devisList : devisList.filter((d) => d.statut === filter)
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '—'
-    return new Date(dateStr).toLocaleDateString('fr-FR')
-  }
-
-  const formatEur = (montant) =>
-    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(montant || 0)
+  const formatDate = (s) => s ? new Date(s).toLocaleDateString('fr-FR') : '—'
+  const formatEur = (n) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n || 0)
 
   const getUrgenceEffective = (d) => {
     if (d.urgence === 'urgent') return 'urgent'
     if (d.statut === 'envoyé' && d.date_envoi) {
-      const jours = Math.floor((Date.now() - new Date(d.date_envoi).getTime()) / 86400000)
-      if (jours >= 3) return 'urgent'
+      if (Math.floor((Date.now() - new Date(d.date_envoi).getTime()) / 86400000) >= 3) return 'urgent'
     }
     return d.urgence || 'normal'
   }
@@ -141,7 +140,7 @@ export default function Devis() {
   const urgenceConfig = {
     urgent:    { label: 'Urgent',    icon: Zap,           className: 'bg-red-100 text-red-700' },
     important: { label: 'Important', icon: AlertTriangle, className: 'bg-amber-100 text-amber-700' },
-    normal:    { label: 'Normal',    icon: null,          className: '' },
+    normal:    null,
   }
 
   const chargeConfig = {
@@ -153,7 +152,7 @@ export default function Devis() {
   const UrgenceBadge = ({ devis }) => {
     const urg = getUrgenceEffective(devis)
     const cfg = urgenceConfig[urg]
-    if (!cfg || urg === 'normal') return null
+    if (!cfg) return null
     const Icon = cfg.icon
     return (
       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cfg.className}`}>
@@ -163,7 +162,6 @@ export default function Devis() {
   }
 
   const ChargeBadge = ({ charge }) => {
-    if (!charge) return null
     const cfg = chargeConfig[charge]
     if (!cfg) return null
     return (
@@ -174,14 +172,14 @@ export default function Devis() {
   }
 
   const filters = [
-    { value: 'tous',     label: 'Tous' },
+    { value: 'tous',      label: 'Tous' },
     { value: 'brouillon', label: 'Brouillons' },
-    { value: 'envoyé',   label: 'Envoyés' },
-    { value: 'consulté', label: 'Consultés' },
-    { value: 'accepté',  label: 'Acceptés' },
-    { value: 'refusé',   label: 'Refusés' },
-    { value: 'facturé',  label: 'Facturés' },
-    { value: 'relancé',  label: 'Relancés' },
+    { value: 'envoyé',    label: 'Envoyés' },
+    { value: 'consulté',  label: 'Consultés' },
+    { value: 'accepté',   label: 'Acceptés' },
+    { value: 'refusé',    label: 'Refusés' },
+    { value: 'facturé',   label: 'Facturés' },
+    { value: 'relancé',   label: 'Relancés' },
   ]
 
   return (
@@ -194,7 +192,7 @@ export default function Devis() {
         </div>
         <Link
           to="/devis/nouveau"
-          className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition"
+          className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition shadow-sm"
         >
           <Plus size={18} />
           <span className="hidden sm:inline">Nouveau devis</span>
@@ -204,16 +202,16 @@ export default function Devis() {
 
       <ProfilIncompletBanner missing={profilMissing} />
 
-      {/* Filtres */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-0.5">
+      {/* Filtres pills */}
+      <div className="flex gap-2 mb-5 overflow-x-auto pb-0.5 -mx-1 px-1">
         {filters.map((f) => (
           <button
             key={f.value}
             onClick={() => setFilter(f.value)}
-            className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition whitespace-nowrap ${
+            className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
               filter === f.value
-                ? 'bg-primary-600 text-white shadow-sm'
-                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                ? 'bg-primary-600 text-white shadow-sm scale-105'
+                : 'bg-white border border-slate-200 text-slate-600 hover:border-primary-300'
             }`}
           >
             {f.label}
@@ -226,9 +224,7 @@ export default function Devis() {
           <div className="md:hidden"><SkeletonCardList count={4} /></div>
           <div className="hidden md:block bg-white rounded-2xl shadow-sm overflow-hidden">
             <table className="w-full">
-              <tbody>
-                {Array.from({ length: 5 }).map((_, i) => <SkeletonTableRow key={i} cols={8} />)}
-              </tbody>
+              <tbody>{Array.from({ length: 5 }).map((_, i) => <SkeletonTableRow key={i} cols={8} />)}</tbody>
             </table>
           </div>
         </>
@@ -241,74 +237,81 @@ export default function Devis() {
         />
       ) : (
         <>
-          {/* Vue mobile : cartes */}
+          {/* Vue mobile : cartes avec accent coloré */}
           <div className="space-y-3 md:hidden">
-            {filtered.map((d) => (
-              <div key={d.id} className="bg-white rounded-2xl shadow-sm p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <p className="font-mono text-xs text-slate-400 mb-0.5">{d.numero}</p>
-                    <p className="font-semibold text-slate-900">{d.titre}</p>
-                    <p className="text-sm text-slate-500">
-                      {d.clients ? `${d.clients.prenom || ''} ${d.clients.nom}`.trim() : '—'}
-                    </p>
+            {filtered.map((d) => {
+              const accent = statusAccent[d.statut] || 'border-l-slate-200'
+              return (
+                <div key={d.id} className={`bg-white rounded-2xl shadow-sm border-l-4 ${accent} pl-4 pr-4 py-4`}>
+                  {/* Ligne 1 : numéro + statut */}
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-mono text-xs text-slate-400">{d.numero}</span>
+                    <div className="flex items-center gap-1.5">
+                      <UrgenceBadge devis={d} />
+                      <StatusBadge statut={d.statut} />
+                    </div>
                   </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <StatusBadge statut={d.statut} />
-                    <UrgenceBadge devis={d} />
-                  </div>
-                </div>
-                {d.charge && (
-                  <div className="mb-1"><ChargeBadge charge={d.charge} /></div>
-                )}
-                <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
-                  <p className="font-bold text-slate-900 text-base">{formatEur(d.montant_ttc)}</p>
-                  <div className="flex gap-0.5">
-                    {d.statut === 'brouillon' && (
-                      <IconBtn onClick={() => navigate(`/devis/${d.id}/modifier`)} title="Modifier" hover="hover:text-primary-600">
-                        <Pencil size={17} />
+
+                  {/* Ligne 2 : titre + client */}
+                  <p className="font-semibold text-slate-900 leading-snug">{d.titre}</p>
+                  <p className="text-sm text-slate-500 mt-0.5">
+                    {d.clients ? `${d.clients.prenom || ''} ${d.clients.nom}`.trim() : '—'}
+                  </p>
+
+                  {d.charge && <div className="mt-1.5"><ChargeBadge charge={d.charge} /></div>}
+
+                  {/* Ligne 3 : montant + actions */}
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
+                    <p className="text-lg font-extrabold text-slate-900">{formatEur(d.montant_ttc)}</p>
+                    <div className="flex gap-0.5">
+                      {d.statut === 'brouillon' && (
+                        <IconBtn onClick={() => navigate(`/devis/${d.id}/modifier`)} title="Modifier" hover="hover:text-primary-600">
+                          <Pencil size={17} />
+                        </IconBtn>
+                      )}
+                      <IconBtn onClick={() => handleDownloadPDF(d.id, d.numero)} title="PDF" hover="hover:text-primary-600">
+                        <Download size={17} />
                       </IconBtn>
-                    )}
-                    <IconBtn onClick={() => handleDownloadPDF(d.id, d.numero)} title="PDF" hover="hover:text-primary-600">
-                      <Download size={17} />
-                    </IconBtn>
-                    <IconBtn onClick={() => handleDupliquer(d.id)} title="Dupliquer" hover="hover:text-primary-600">
-                      <Copy size={17} />
-                    </IconBtn>
-                    <IconBtn onClick={() => handleSauvegarderModele(d)} title="Sauvegarder comme modèle" hover="hover:text-amber-600">
-                      <Bookmark size={17} />
-                    </IconBtn>
-                    {d.statut === 'brouillon' && (
-                      <button
-                        onClick={() => handleEnvoyer(d.id)}
-                        disabled={!d.clients?.email}
-                        className={`p-2 rounded-xl transition text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed ${
-                          confirmEnvoi === d.id
-                            ? 'bg-blue-600 text-white px-3'
-                            : 'text-slate-400 hover:text-blue-600'
-                        }`}
-                        title={d.clients?.email ? 'Envoyer' : 'Client sans email'}
-                      >
-                        {confirmEnvoi === d.id ? 'Confirmer ?' : <Send size={17} />}
-                      </button>
-                    )}
-                    {['envoyé', 'consulté', 'accepté', 'relancé'].includes(d.statut) && (
-                      <IconBtn onClick={() => handleConvertir(d.id)} title="Convertir en facture" hover="hover:text-green-600">
-                        <FileCheck size={17} />
+                      <IconBtn onClick={() => handleDupliquer(d.id)} title="Dupliquer" hover="hover:text-primary-600">
+                        <Copy size={17} />
                       </IconBtn>
-                    )}
-                    <IconBtn onClick={() => handleDelete(d.id)} title="Supprimer" hover="hover:text-red-600">
-                      <Trash2 size={17} />
-                    </IconBtn>
+                      <IconBtn onClick={() => handleSauvegarderModele(d)} title="Modèle" hover="hover:text-amber-500">
+                        <Bookmark size={17} />
+                      </IconBtn>
+                      {d.statut === 'brouillon' && (
+                        <button
+                          onClick={() => handleEnvoyer(d.id)}
+                          disabled={!d.clients?.email}
+                          className={`p-2 rounded-xl transition text-sm font-semibold disabled:opacity-30 disabled:cursor-not-allowed ${
+                            confirmEnvoi === d.id
+                              ? 'bg-blue-600 text-white px-3'
+                              : 'text-slate-400 hover:text-blue-600'
+                          }`}
+                          title={d.clients?.email ? 'Envoyer' : 'Client sans email'}
+                        >
+                          {confirmEnvoi === d.id ? 'Confirmer ?' : <Send size={17} />}
+                        </button>
+                      )}
+                      {['envoyé', 'consulté', 'accepté', 'relancé'].includes(d.statut) && (
+                        <IconBtn onClick={() => handleConvertir(d.id)} title="Convertir en facture" hover="hover:text-green-600">
+                          <FileCheck size={17} />
+                        </IconBtn>
+                      )}
+                      <IconBtn onClick={() => handleDelete(d.id)} title="Supprimer" hover="hover:text-red-600">
+                        <Trash2 size={17} />
+                      </IconBtn>
+                    </div>
+                  </div>
+
+                  {/* Dates */}
+                  <div className="flex gap-3 text-xs text-slate-400 mt-2">
+                    <span>Créé {formatDate(d.date_creation)}</span>
+                    {d.date_envoi && <span>Envoyé {formatDate(d.date_envoi)}</span>}
+                    {d.date_relance && <span>Relancé {formatDate(d.date_relance)}</span>}
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-400 mt-2">
-                  <span>Créé {formatDate(d.date_creation)}</span>
-                  {d.date_envoi && <span>Envoyé {formatDate(d.date_envoi)}</span>}
-                  {d.date_relance && <span>Relancé {formatDate(d.date_relance)}</span>}
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           {/* Vue desktop : tableau */}
@@ -316,25 +319,22 @@ export default function Devis() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50">
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Numéro</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Client</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Titre</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Montant TTC</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Statut</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Suivi</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Historique</th>
-                  <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Actions</th>
+                  {['Numéro', 'Client', 'Titre', 'Montant TTC', 'Statut', 'Suivi', 'Historique', ''].map((h, i) => (
+                    <th key={h} className={`px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide ${i === 7 ? 'text-right' : 'text-left'}`}>
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((d) => (
                   <tr key={d.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition">
-                    <td className="px-5 py-4 text-sm font-mono text-slate-700">{d.numero}</td>
+                    <td className="px-5 py-4 text-sm font-mono text-slate-600">{d.numero}</td>
                     <td className="px-5 py-4 text-sm text-slate-700">
                       {d.clients ? `${d.clients.prenom || ''} ${d.clients.nom}`.trim() : '—'}
                     </td>
-                    <td className="px-5 py-4 text-sm text-slate-700">{d.titre}</td>
-                    <td className="px-5 py-4 text-sm font-semibold text-slate-900">{formatEur(d.montant_ttc)}</td>
+                    <td className="px-5 py-4 text-sm font-medium text-slate-800">{d.titre}</td>
+                    <td className="px-5 py-4 text-sm font-bold text-slate-900">{formatEur(d.montant_ttc)}</td>
                     <td className="px-5 py-4"><StatusBadge statut={d.statut} /></td>
                     <td className="px-5 py-4">
                       <div className="flex flex-wrap gap-1">
@@ -362,7 +362,7 @@ export default function Devis() {
                         <IconBtn onClick={() => handleDupliquer(d.id)} title="Dupliquer" hover="hover:text-primary-600 hover:bg-primary-50">
                           <Copy size={16} />
                         </IconBtn>
-                        <IconBtn onClick={() => handleSauvegarderModele(d)} title="Sauvegarder comme modèle" hover="hover:text-amber-600 hover:bg-amber-50">
+                        <IconBtn onClick={() => handleSauvegarderModele(d)} title="Modèle" hover="hover:text-amber-600 hover:bg-amber-50">
                           <Bookmark size={16} />
                         </IconBtn>
                         {d.statut === 'brouillon' && (
@@ -370,7 +370,7 @@ export default function Devis() {
                             onClick={() => handleEnvoyer(d.id)}
                             disabled={!d.clients?.email}
                             title={d.clients?.email ? 'Envoyer' : 'Client sans email'}
-                            className={`p-1.5 rounded-xl transition text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed ${
+                            className={`p-1.5 rounded-xl transition text-sm font-semibold disabled:opacity-30 disabled:cursor-not-allowed ${
                               confirmEnvoi === d.id
                                 ? 'bg-blue-600 text-white px-3'
                                 : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'
@@ -402,11 +402,7 @@ export default function Devis() {
 
 function IconBtn({ onClick, title, hover, children }) {
   return (
-    <button
-      onClick={onClick}
-      title={title}
-      className={`p-2 rounded-xl transition text-slate-400 ${hover}`}
-    >
+    <button onClick={onClick} title={title} className={`p-2 rounded-xl transition text-slate-400 ${hover}`}>
       {children}
     </button>
   )
