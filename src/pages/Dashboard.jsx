@@ -233,12 +233,15 @@ export default function Dashboard() {
               </div>
               <span className="text-[13px] font-semibold text-white/90">À faire maintenant</span>
             </div>
-            <span className="bg-white/20 rounded-xl px-2.5 py-0.5 text-xs font-bold text-white">
-              {actions.length}
-            </span>
+            <Link
+              to="/suivi"
+              className="bg-white/20 rounded-xl px-2.5 py-0.5 text-xs font-bold text-white hover:bg-white/30 transition"
+            >
+              {actions.length} · Voir tout →
+            </Link>
           </div>
 
-          {actions.slice(0, 5).map((action, i) => (
+          {actions.slice(0, 4).map((action, i) => (
             <Link
               key={i}
               to={action.link}
@@ -256,6 +259,13 @@ export default function Dashboard() {
               )}
             </Link>
           ))}
+
+          <Link
+            to="/suivi"
+            className="flex items-center justify-center gap-1.5 pt-3 border-t border-white/15 text-[12px] font-semibold text-white/80 hover:text-white transition"
+          >
+            Voir le suivi complet →
+          </Link>
         </div>
       ) : (
         <div className="bg-green-50 border border-green-200 rounded-2xl px-5 py-4 mb-5 flex items-center gap-3">

@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { LayoutDashboard, FileText, Users, LogOut, Receipt, Bell, UserCog } from 'lucide-react'
+import { LayoutDashboard, FileText, Users, LogOut, Receipt, Bell, UserCog, Activity } from 'lucide-react'
 import useProfil from '../lib/useProfil'
 
 const links = [
@@ -8,6 +8,7 @@ const links = [
   { to: '/devis',    label: 'Devis',           icon: FileText },
   { to: '/factures', label: 'Factures',        icon: Receipt },
   { to: '/clients',  label: 'Clients',         icon: Users },
+  { to: '/suivi',    label: 'Suivi clients',   icon: Activity },
   { to: '/rappels',  label: 'Rappels',         icon: Bell },
   { to: '/profil',   label: 'Mon profil',      icon: UserCog },
 ]

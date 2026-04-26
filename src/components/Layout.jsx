@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate, NavLink, useLocation } from 'react-router-dom'
+import { Link, useNavigate, NavLink, useLocation } from 'react-router-dom'
 import useAuth from '../lib/useAuth'
 import Sidebar from './Sidebar'
-import { Bell, X, LayoutDashboard, FileText, Receipt, UserCog, Users } from 'lucide-react'
+import { Bell, X, LayoutDashboard, FileText, Receipt, UserCog, Users, Activity } from 'lucide-react'
 import OfflineBanner from './OfflineBanner'
 import { supabase } from '../lib/supabase'
 
@@ -46,26 +46,37 @@ function NotifDropdown({ notifs, notifOpen, setNotifOpen, notifRef, navigate }) 
               Aucune notification
             </div>
           ) : (
-            <div className="divide-y divide-slate-100">
-              {notifs.map((n) => (
-                <button
-                  key={n.id}
-                  onClick={() => { navigate(n.link); setNotifOpen(false) }}
-                  className="w-full text-left px-4 py-3 hover:bg-slate-50 transition"
-                >
-                  <div className="flex items-start gap-2.5">
-                    <span className={`mt-1.5 flex-shrink-0 w-2 h-2 rounded-full ${n.urgent ? 'bg-red-500' : 'bg-blue-400'}`} />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm text-slate-800 truncate">{n.text}</p>
-                      {n.sub && <p className="text-xs text-slate-500 mt-0.5">{n.sub}</p>}
-                      <span className={`inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${n.urgent ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
-                        {n.label}
-                      </span>
+            <>
+              <div className="divide-y divide-slate-100">
+                {notifs.map((n) => (
+                  <button
+                    key={n.id}
+                    onClick={() => { navigate(n.link); setNotifOpen(false) }}
+                    className="w-full text-left px-4 py-3 hover:bg-slate-50 transition"
+                  >
+                    <div className="flex items-start gap-2.5">
+                      <span className={`mt-1.5 flex-shrink-0 w-2 h-2 rounded-full ${n.urgent ? 'bg-red-500' : 'bg-blue-400'}`} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-slate-800 truncate">{n.text}</p>
+                        {n.sub && <p className="text-xs text-slate-500 mt-0.5">{n.sub}</p>}
+                        <span className={`inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${n.urgent ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+                          {n.label}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </button>
-              ))}
-            </div>
+                  </button>
+                ))}
+              </div>
+              <div className="px-4 py-2.5 border-t border-slate-100">
+                <Link
+                  to="/suivi"
+                  onClick={() => setNotifOpen(false)}
+                  className="flex items-center justify-center gap-1.5 text-xs font-semibold text-primary-600 hover:text-primary-700 py-1 transition"
+                >
+                  <Activity size={12} /> Voir le suivi complet →
+                </Link>
+              </div>
+            </>
           )}
         </div>
       )}
@@ -85,7 +96,9 @@ export default function Layout({ children }) {
     if (!user) return
     const loadNotifs = async () => {
       const today = new Date().toISOString().slice(0, 10)
-      const [rappelsRes, devisRes] = await Promise.all([
+      const seuil30j = new Date(Date.now() - 30 * 86_400_000).toISOString()
+
+      const [rappelsRes, devisRes, facturesRes] = await Promise.all([
         supabase
           .from('rappels')
           .select('id, commentaire, date_rappel, clients(nom, prenom)')
@@ -97,10 +110,18 @@ export default function Layout({ children }) {
           .from('devis')
           .select('id, numero, titre, date_envoi, statut')
           .eq('user_id', user.id)
-          .in('statut', ['envoyé', 'relancé']),
+          .in('statut', ['envoyé', 'consulté', 'relancé']),
+        supabase
+          .from('factures')
+          .select('id, numero, titre, date_creation, montant_ttc')
+          .eq('user_id', user.id)
+          .eq('statut', 'émise')
+          .is('deleted_at', null)
+          .lt('date_creation', seuil30j),
       ])
 
       const items = []
+
       ;(rappelsRes.data || []).forEach((r) => {
         const retard = r.date_rappel < today
         items.push({
@@ -112,17 +133,30 @@ export default function Layout({ children }) {
           link: '/rappels',
         })
       })
+
       ;(devisRes.data || []).filter((d) => {
         if (!d.date_envoi) return false
-        return Math.floor((Date.now() - new Date(d.date_envoi).getTime()) / 86400000) >= 3
+        return Math.floor((Date.now() - new Date(d.date_envoi).getTime()) / 86_400_000) >= 3
       }).forEach((d) => {
         items.push({
           id: `devis-${d.id}`,
           text: `${d.numero} — ${d.titre}`,
-          sub: 'Sans réponse depuis +3 jours',
+          sub: 'Devis sans réponse',
           urgent: true,
           label: 'À relancer',
-          link: '/devis',
+          link: `/devis/${d.id}`,
+        })
+      })
+
+      ;(facturesRes.data || []).forEach((f) => {
+        const jours = Math.floor((Date.now() - new Date(f.date_creation).getTime()) / 86_400_000)
+        items.push({
+          id: `facture-${f.id}`,
+          text: `${f.numero} — ${f.titre}`,
+          sub: `Impayée depuis ${jours} jours`,
+          urgent: jours >= 60,
+          label: jours >= 60 ? 'Mise en demeure' : 'Impayée',
+          link: `/factures/${f.id}`,
         })
       })
 

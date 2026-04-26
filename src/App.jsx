@@ -25,6 +25,7 @@ import ConditionsUtilisation from './pages/ConditionsUtilisation'
 import Conformite from './pages/Conformite'
 import CGV from './pages/CGV'
 import DevisPublic from './pages/DevisPublic'
+import Suivi from './pages/Suivi'
 
 function App() {
   useEffect(() => {
@@ -60,6 +61,7 @@ function App() {
         <Route path="/clients/:id" element={<ClientDetail />} />
         <Route path="/factures" element={<Factures />} />
         <Route path="/factures/:id" element={<FactureDetail />} />
+        <Route path="/suivi" element={<Suivi />} />
         <Route path="/rappels" element={<Rappels />} />
         <Route path="/profil" element={<Profil />} />
         <Route path="/mentions-legales" element={<MentionsLegales />} />
