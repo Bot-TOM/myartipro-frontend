@@ -4,7 +4,7 @@ const HEADERS = [
   'Numéro', 'Client', 'Titre',
   'Date création', 'Date échéance', 'Date paiement',
   'Montant HT (€)', 'TVA (%)', 'Montant TTC (€)',
-  'Statut', 'Notes',
+  'Statut', 'Mode paiement', 'Notes',
 ]
 
 function cell(value) {
@@ -24,15 +24,6 @@ function isoDate(str) {
   return (str || '').slice(0, 10)
 }
 
-/**
- * Génère et télécharge un CSV comptable à partir d'une liste de factures.
- * Utilise Web Share API sur iOS PWA, lien de téléchargement sinon.
- *
- * @param {Array}  factures  - factures déjà chargées en mémoire
- * @param {number} mois      - 1–12
- * @param {number} annee     - ex: 2026
- * @returns {{ count: number, filename: string }}
- */
 export function exportFacturesCsv(factures, mois, annee) {
   const mm = String(mois).padStart(2, '0')
   const debut = `${annee}-${mm}-01`
@@ -60,11 +51,12 @@ export function exportFacturesCsv(factures, mois, annee) {
     f.tva           ?? '',
     (f.montant_ttc || 0).toFixed(2),
     f.statut        || '',
+    f.mode_paiement || '',
     f.notes         || '',
   ])
 
   const totalLabel = `TOTAL — ${filtered.length} facture${filtered.length > 1 ? 's' : ''}, ${nbPayees} payée${nbPayees > 1 ? 's' : ''}`
-  const totalRow = [totalLabel, '', '', '', '', '', totalHT.toFixed(2), '', totalTTC.toFixed(2), '', '']
+  const totalRow = [totalLabel, '', '', '', '', '', totalHT.toFixed(2), '', totalTTC.toFixed(2), '', '', '']
 
   const lines = [
     rowToCsv(HEADERS),
@@ -73,12 +65,10 @@ export function exportFacturesCsv(factures, mois, annee) {
     rowToCsv(totalRow),
   ]
 
-  // BOM UTF-8 pour compatibilité Excel
   const csv = '\ufeff' + lines.join('\n')
   const filename = `factures_${annee}-${mm}.csv`
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
 
-  // iOS PWA : Web Share API (partage natif)
   const file = new File([blob], filename, { type: 'text/csv' })
   if (navigator.canShare?.({ files: [file] })) {
     navigator.share({ files: [file], title: filename }).catch((err) => {
