@@ -6,6 +6,14 @@ import { ExpirationPlugin } from 'workbox-expiration'
 cleanupOutdatedCaches()
 precacheAndRoute(self.__WB_MANIFEST)
 
+// Le SW attend sagement — skipWaiting() déclenché uniquement par le bouton "Recharger"
+self.addEventListener('activate', (event) => event.waitUntil(clients.claim()))
+
+// Requis pour le bouton "Recharger" du PwaUpdatePrompt
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting()
+})
+
 registerRoute(
   ({ url }) => url.hostname.includes('supabase.co'),
   new NetworkFirst({
@@ -26,16 +34,24 @@ registerRoute(
 
 self.addEventListener('push', (event) => {
   if (!event.data) return
-  const data = event.data.json()
+  let data
+  try { data = event.data.json() } catch { return }
+
   event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: '/icon-192.png',
-      badge: '/icon-192.png',
-      vibrate: [200, 100, 200],
-      tag: data.tag || 'myartipro',
-      data: { url: data.url || '/' },
-    })
+    Promise.all([
+      // Notification système (background)
+      self.registration.showNotification(data.title || 'MyArtipro', {
+        body: data.body || '',
+        icon: '/icon-192.png',
+        tag: data.tag || 'myartipro',
+        renotify: true,
+        data: { url: data.url || '/' },
+      }),
+      // Message vers l'app si elle est au premier plan
+      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+        windowClients.forEach((client) => client.postMessage({ type: 'PUSH_RECEIVED', ...data }))
+      }),
+    ])
   )
 })
 

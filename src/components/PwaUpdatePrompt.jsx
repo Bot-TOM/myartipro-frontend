@@ -17,7 +17,10 @@ export default function PwaUpdatePrompt() {
         <RefreshCw size={18} className="shrink-0 text-primary-400" />
         <p className="text-sm flex-1">Mise à jour disponible</p>
         <button
-          onClick={() => updateServiceWorker(true)}
+          onClick={async () => {
+            await updateServiceWorker(true)
+            window.location.reload()
+          }}
           className="text-sm font-semibold text-primary-400 hover:text-primary-300 whitespace-nowrap transition"
         >
           Recharger
