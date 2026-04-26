@@ -4,7 +4,7 @@ import Layout from '../components/Layout'
 import api from '../lib/api'
 import { toastApiError } from '../lib/toastApiError'
 import toast from 'react-hot-toast'
-import { User, Building2, Phone, MapPin, CreditCard, Save, ImagePlus, Trash2, Wallet, ToggleLeft, ToggleRight, Receipt, Bell, BellOff } from 'lucide-react'
+import { User, Building2, Phone, MapPin, CreditCard, Save, ImagePlus, Trash2, Wallet, ToggleLeft, ToggleRight, Receipt, Bell, BellOff, MessageSquare } from 'lucide-react'
 import usePushNotifications from '../lib/usePushNotifications'
 import { supabase } from '../lib/supabase'
 
@@ -23,6 +23,8 @@ export default function Profil() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [testingPush, setTestingPush] = useState(false)
+  const [testingSms, setTestingSms] = useState(false)
 
   const [form, setForm] = useState({
     nom: '',
@@ -37,6 +39,7 @@ export default function Profil() {
     instructions_paiement: '',
     regime_tva: 'franchise',
     numero_tva: '',
+    sms_notifications: false,
   })
 
   useEffect(() => {
@@ -58,6 +61,7 @@ export default function Profil() {
           instructions_paiement: p.instructions_paiement || '',
           regime_tva: p.regime_tva || 'franchise',
           numero_tva: p.numero_tva || '',
+          sms_notifications: p.sms_notifications || false,
         })
       } catch (err) {
         toastApiError(err, 'Erreur chargement du profil')
@@ -126,6 +130,30 @@ export default function Profil() {
     await supabase.storage.from('logos').remove([`logos/${user.id}.${ext}`])
     setForm((prev) => ({ ...prev, logo_url: '' }))
     toast.success('Logo supprimé')
+  }
+
+  const handleTestSms = async () => {
+    setTestingSms(true)
+    try {
+      const { data } = await api.post('/push/test-sms')
+      if (data.ok) toast.success('SMS envoyé !')
+      else toast.error(data.error || 'Erreur lors du test SMS')
+    } catch {
+      toast.error('Erreur lors du test SMS')
+    }
+    setTestingSms(false)
+  }
+
+  const handleTestPush = async () => {
+    setTestingPush(true)
+    try {
+      const { data } = await api.post('/push/test')
+      if (data.ok) toast.success('Notification envoyée !')
+      else toast.error(data.error || 'Erreur lors du test')
+    } catch {
+      toast.error('Erreur lors du test de notification')
+    }
+    setTestingPush(false)
   }
 
   if (loading) {
@@ -397,7 +425,7 @@ export default function Profil() {
                 <p className="text-sm font-medium text-gray-800">Franchise en base (art. 293 B CGI)</p>
                 <p className="text-xs text-gray-500 mt-0.5">
                   Pas de TVA sur vos factures. La mention "TVA non applicable" est ajoutée automatiquement sur vos PDF.
-                  Regime habituel des micro-entrepreneurs sous le seuil de franchise.
+                  Régime habituel des micro-entrepreneurs sous le seuil de franchise.
                 </p>
               </div>
             </label>
@@ -448,27 +476,97 @@ export default function Profil() {
           )}
         </div>
 
-        {/* Notifications push */}
-        {pushSupported && (
-          <div className="bg-white rounded-xl border p-5 flex items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0">
-              {pushSubscribed ? <Bell size={18} className="text-primary-600" /> : <BellOff size={18} className="text-slate-400" />}
+        {/* Notifications */}
+        <div className="bg-white rounded-xl border p-5 space-y-4">
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <Bell size={18} className="text-primary-600" /> Notifications
+          </h2>
+
+          {/* Push */}
+          {pushSupported && (
+            <div className="flex items-center gap-4 py-2 border-b border-gray-100">
+              <div className="w-9 h-9 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0">
+                {pushSubscribed ? <Bell size={16} className="text-primary-600" /> : <BellOff size={16} className="text-slate-400" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900">Notifications push</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {pushSubscribed ? 'Activées sur cet appareil.' : 'Désactivées sur cet appareil.'}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {pushSubscribed && (
+                  <button
+                    type="button"
+                    onClick={handleTestPush}
+                    disabled={testingPush}
+                    className="text-xs text-primary-600 hover:text-primary-700 font-medium px-2 py-1 rounded transition disabled:opacity-50"
+                  >
+                    {testingPush ? '...' : 'Tester'}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={async () => {
+                if (pushSubscribed) {
+                  await pushUnsubscribe()
+                } else {
+                  const { ok, error } = await pushSubscribe()
+                  if (!ok) toast.error(error || 'Échec activation notifications')
+                }
+              }}
+                  className={`text-sm font-medium px-3 py-1.5 rounded-lg transition ${pushSubscribed ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-primary-600 text-white hover:bg-primary-700'}`}
+                >
+                  {pushSubscribed ? 'Désactiver' : 'Activer'}
+                </button>
+              </div>
             </div>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-900">Notifications push</p>
+          )}
+
+          {/* SMS */}
+          <div className="flex items-center gap-4 py-2">
+            <div className="w-9 h-9 rounded-full bg-green-50 flex items-center justify-center flex-shrink-0">
+              <MessageSquare size={16} className="text-green-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-900">SMS</p>
               <p className="text-xs text-gray-500 mt-0.5">
-                {pushSubscribed ? 'Activées sur cet appareil — devis accepté, paiement reçu, rappels.' : 'Désactivées sur cet appareil.'}
+                {form.telephone
+                  ? 'Recevez un SMS lors d\'un devis accepté ou d\'un paiement reçu.'
+                  : 'Renseignez votre téléphone (section Identité) pour activer les SMS.'}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={pushSubscribed ? pushUnsubscribe : pushSubscribe}
-              className={`text-sm font-medium px-4 py-2 rounded-lg transition ${pushSubscribed ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-primary-600 text-white hover:bg-primary-700'}`}
-            >
-              {pushSubscribed ? 'Désactiver' : 'Activer'}
-            </button>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {form.sms_notifications && form.telephone && (
+                <button
+                  type="button"
+                  onClick={handleTestSms}
+                  disabled={testingSms}
+                  className="text-xs text-green-600 hover:text-green-700 font-medium px-2 py-1 rounded transition disabled:opacity-50"
+                >
+                  {testingSms ? '...' : 'Tester'}
+                </button>
+              )}
+              <button
+                type="button"
+                disabled={!form.telephone}
+                onClick={() => setForm((prev) => ({ ...prev, sms_notifications: !prev.sms_notifications }))}
+                className={`text-sm font-medium px-3 py-1.5 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed ${
+                  form.sms_notifications
+                    ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                    : 'bg-green-600 text-white hover:bg-green-700'
+                }`}
+              >
+                {form.sms_notifications ? 'Désactiver' : 'Activer'}
+              </button>
+            </div>
           </div>
-        )}
+          {form.sms_notifications && form.telephone && (
+            <p className="text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2">
+              SMS activés sur le {form.telephone}. Pensez à enregistrer.
+            </p>
+          )}
+        </div>
 
         {/* Info */}
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-700">

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import useAuth from '../lib/useAuth'
 import useProfil from '../lib/useProfil'
@@ -27,6 +27,7 @@ export default function Dashboard() {
   const { user } = useAuth()
   const { profil, isComplete: isProfilComplete } = useProfil()
   const navigate = useNavigate()
+  const location = useLocation()
   const [loading, setLoading] = useState(true)
   const [actions, setActions] = useState([])
   const [devisList, setDevisList] = useState([])
@@ -46,7 +47,8 @@ export default function Dashboard() {
       try {
         const today = new Date().toISOString().slice(0, 10)
         const now = new Date()
-        const debutMois = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+        const mm = String(now.getMonth() + 1).padStart(2, '0')
+        const debutMois = `${now.getFullYear()}-${mm}-01`
 
         const [devisRes, clientsRes, facturesRes, rappelsRes, devisUrgentsRes] = await Promise.all([
           supabase
@@ -137,7 +139,7 @@ export default function Dashboard() {
       }
     }
     load()
-  }, [user])
+  }, [user, location.key])
 
   const moisLabel = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
   const jourLabel = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
