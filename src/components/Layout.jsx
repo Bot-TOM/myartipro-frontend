@@ -6,12 +6,14 @@ import { Bell, X, LayoutDashboard, FileText, Receipt, UserCog, Users, Activity }
 import OfflineBanner from './OfflineBanner'
 import { supabase } from '../lib/supabase'
 
+// Profil retiré de la barre mobile (accessible via sidebar desktop + avatar en haut du Dashboard).
+// "Suivi" prend sa place : c'est une feature à usage quotidien.
 const tabs = [
   { to: '/',         label: 'Accueil',  icon: LayoutDashboard, end: true },
   { to: '/devis',    label: 'Devis',    icon: FileText },
   { to: '/factures', label: 'Factures', icon: Receipt },
   { to: '/clients',  label: 'Clients',  icon: Users },
-  { to: '/profil',   label: 'Profil',   icon: UserCog },
+  { to: '/suivi',    label: 'Suivi',    icon: Activity },
 ]
 
 function NotifDropdown({ notifs, notifOpen, setNotifOpen, notifRef, navigate }) {
@@ -88,8 +90,9 @@ export default function Layout({ children }) {
   const { user, loading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const [notifs, setNotifs] = useState([])
+  const [notifs, setNotifs]       = useState([])
   const [notifOpen, setNotifOpen] = useState(false)
+  const [suiviUrgent, setSuiviUrgent] = useState(0)
   const notifRef = useRef(null)
 
   useEffect(() => {
@@ -161,6 +164,14 @@ export default function Layout({ children }) {
       })
 
       setNotifs(items)
+
+      // Badge onglet Suivi : devis urgents (≥7j) + factures impayées (≥30j)
+      const urgentDevis = (devisRes.data || []).filter((d) => {
+        if (!d.date_envoi) return false
+        return Math.floor((Date.now() - new Date(d.date_envoi).getTime()) / 86_400_000) >= 7
+      }).length
+      const urgentFactures = (facturesRes.data || []).length
+      setSuiviUrgent(urgentDevis + urgentFactures)
     }
 
     loadNotifs()
@@ -223,6 +234,7 @@ export default function Layout({ children }) {
             const isActive = end
               ? location.pathname === to
               : location.pathname === to || location.pathname.startsWith(to + '/')
+            const badge = to === '/suivi' && suiviUrgent > 0 ? suiviUrgent : 0
             return (
               <NavLink
                 key={to}
@@ -230,12 +242,17 @@ export default function Layout({ children }) {
                 end={end}
                 className="flex flex-1 flex-col items-center gap-0.5"
               >
-                <div className={`px-4 py-1.5 rounded-2xl transition-all duration-150 ${isActive ? 'bg-primary-100' : ''}`}>
+                <div className={`relative px-4 py-1.5 rounded-2xl transition-all duration-150 ${isActive ? 'bg-primary-100' : ''}`}>
                   <Icon
                     size={21}
                     className={`transition-colors duration-150 ${isActive ? 'text-primary-600' : 'text-slate-400'}`}
                     strokeWidth={isActive ? 2.5 : 1.8}
                   />
+                  {badge > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 flex items-center justify-center text-[9px] font-bold text-white bg-red-500 rounded-full px-1">
+                      {badge > 9 ? '9+' : badge}
+                    </span>
+                  )}
                 </div>
                 <span className={`text-[10px] leading-none transition-colors duration-150 ${isActive ? 'font-bold text-primary-600' : 'font-normal text-slate-400'}`}>
                   {label}
