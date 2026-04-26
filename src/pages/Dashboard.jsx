@@ -180,11 +180,17 @@ export default function Dashboard() {
               <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
             )}
           </button>
-          <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center">
-            <span className="text-white text-sm font-bold">
-              {profil?.prenom?.[0]}{profil?.nom?.[0]}
+          <button
+            onClick={() => navigate('/profil')}
+            className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center hover:bg-primary-700 transition"
+            title="Mon profil"
+          >
+            <span className="text-white text-sm font-bold select-none">
+              {profil?.prenom?.[0] || profil?.nom?.[0]
+                ? `${(profil.prenom?.[0] ?? '').toUpperCase()}${(profil.nom?.[0] ?? '').toUpperCase()}`
+                : '?'}
             </span>
-          </div>
+          </button>
         </div>
       </div>
 
