@@ -188,7 +188,7 @@ export default function Dashboard() {
             <span className="text-white text-sm font-bold select-none">
               {profil?.prenom?.[0] || profil?.nom?.[0]
                 ? `${(profil.prenom?.[0] ?? '').toUpperCase()}${(profil.nom?.[0] ?? '').toUpperCase()}`
-                : '?'}
+                : (user?.email?.[0] ?? '?').toUpperCase()}
             </span>
           </button>
         </div>

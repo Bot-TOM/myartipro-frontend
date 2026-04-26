@@ -234,20 +234,52 @@ export default function DevisPublic() {
         </div>
 
         {/* Totaux */}
-        <div className="bg-white rounded-xl border p-4 space-y-2">
-          <div className="flex justify-between text-sm text-gray-600">
-            <span>Total HT</span>
-            <span>{formatEur(devis?.montant_ht)}</span>
-          </div>
-          <div className="flex justify-between text-sm text-gray-600">
-            <span>TVA ({devis?.tva}%)</span>
-            <span>{formatEur((devis?.montant_ttc || 0) - (devis?.montant_ht || 0))}</span>
-          </div>
-          <div className="flex justify-between font-bold text-lg text-primary-600 border-t pt-2">
-            <span>Total TTC</span>
-            <span>{formatEur(devis?.montant_ttc)}</span>
-          </div>
-        </div>
+        {(() => {
+          const ht        = devis?.montant_ht   || 0
+          const ttc       = devis?.montant_ttc  || 0
+          const tva       = devis?.tva          || 0
+          const acomptePct = devis?.acompte_pct || 0
+          const montantTVA = ttc - ht
+          const acompteTTC = acomptePct > 0 ? ttc * acomptePct / 100 : 0
+          const soldeTTC   = acomptePct > 0 ? ttc - acompteTTC : 0
+          const isFranchise = tva === 0
+
+          return (
+            <div className="bg-white rounded-xl border p-4 space-y-2">
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Total HT</span>
+                <span>{formatEur(ht)}</span>
+              </div>
+
+              {isFranchise ? (
+                <p className="text-xs text-amber-700 italic">TVA non applicable — franchise en base (art. 293 B CGI)</p>
+              ) : (
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>TVA ({tva}%)</span>
+                  <span>{formatEur(montantTVA)}</span>
+                </div>
+              )}
+
+              <div className="flex justify-between font-bold text-lg text-primary-600 border-t pt-2">
+                <span>Total {isFranchise ? 'HT' : 'TTC'}</span>
+                <span>{formatEur(ttc)}</span>
+              </div>
+
+              {acomptePct > 0 && (
+                <>
+                  <div className="flex justify-between text-sm text-gray-600 border-t pt-2">
+                    <span>Acompte à la commande ({acomptePct}%)</span>
+                    <span className="font-semibold text-orange-600">{formatEur(acompteTTC)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-semibold text-gray-800">
+                    <span>Solde restant</span>
+                    <span>{formatEur(soldeTTC)}</span>
+                  </div>
+                </>
+              )}
+            </div>
+          )
+        })()}
 
         {/* Notes */}
         {devis?.notes && (
