@@ -242,7 +242,7 @@ export default function Devis() {
             {filtered.map((d) => {
               const accent = statusAccent[d.statut] || 'border-l-slate-200'
               return (
-                <div key={d.id} className={`bg-white rounded-2xl shadow-sm border-l-4 ${accent} pl-4 pr-4 py-4`}>
+                <div key={d.id} className={`bg-white rounded-2xl shadow-sm border-l-4 ${accent} pl-4 pr-4 py-4 cursor-pointer`} onClick={() => navigate(`/devis/${d.id}`)}>
                   {/* Ligne 1 : numéro + statut */}
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="font-mono text-xs text-slate-400">{d.numero}</span>
@@ -261,7 +261,7 @@ export default function Devis() {
                   {d.charge && <div className="mt-1.5"><ChargeBadge charge={d.charge} /></div>}
 
                   {/* Ligne 3 : montant + actions */}
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
                     <p className="text-lg font-extrabold text-slate-900">{formatEur(d.montant_ttc)}</p>
                     <div className="flex gap-0.5">
                       {d.statut === 'brouillon' && (
