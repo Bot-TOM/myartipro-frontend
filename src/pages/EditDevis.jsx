@@ -11,11 +11,13 @@ import { enqueueRequest } from '../lib/offlineQueue'
 import { Plus, Trash2, ArrowLeft, UserPlus } from 'lucide-react'
 import QuickClientModal from '../components/QuickClientModal'
 import { PRESTATIONS_TYPES } from '../lib/constants'
+import useProfil from '../lib/useProfil'
 
 export default function EditDevis() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { isFranchise } = useProfil()
   const [clients, setClients] = useState([])
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -92,6 +94,11 @@ export default function EditDevis() {
     })
   }, [user, id])
 
+  // Franchise TVA : toujours forcer à 0 pour les auto-entrepreneurs
+  useEffect(() => {
+    if (isFranchise) setForm((prev) => ({ ...prev, tva: 0 }))
+  }, [isFranchise])
+
   const addPrestation = () => {
     setPrestations([...prestations, { description: '', quantite: 1, prix_unitaire: 0 }])
   }
@@ -136,7 +143,7 @@ export default function EditDevis() {
         quantite: parseFloat(p.quantite) || 1,
         prix_unitaire: parseFloat(p.prix_unitaire) || 0,
       })),
-      tva: form.tva === '' || form.tva === null || form.tva === undefined ? 20 : parseFloat(form.tva),
+      tva: isFranchise ? 0 : (form.tva === '' || form.tva === null || form.tva === undefined ? 20 : parseFloat(form.tva)),
       acompte_pct: parseInt(form.acompte_pct) || 0,
       date_validite: form.date_validite || null,
       notes: form.notes || null,
@@ -234,13 +241,19 @@ export default function EditDevis() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">TVA (%)</label>
-              <input
-                type="number"
-                value={form.tva}
-                onChange={(e) => setForm({ ...form, tva: e.target.value })}
-                step="0.1"
-                className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-base"
-              />
+              {isFranchise ? (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-3 leading-snug">
+                  Franchise en base — TVA non applicable (art. 293 B CGI)
+                </p>
+              ) : (
+                <input
+                  type="number"
+                  value={form.tva}
+                  onChange={(e) => setForm({ ...form, tva: e.target.value })}
+                  step="0.1"
+                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-base"
+                />
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Validité</label>
@@ -395,11 +408,15 @@ export default function EditDevis() {
               <div className="flex justify-between text-sm text-gray-600">
                 <span>Total HT</span><span>{formatEur(montantHT)}</span>
               </div>
-              <div className="flex justify-between text-sm text-gray-600">
-                <span>TVA ({form.tva}%)</span><span>{formatEur(montantTVA)}</span>
-              </div>
+              {isFranchise ? (
+                <p className="text-xs text-amber-700 italic">TVA non applicable — franchise en base (art. 293 B CGI)</p>
+              ) : (
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>TVA ({form.tva}%)</span><span>{formatEur(montantTVA)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-lg font-bold text-gray-900 border-t pt-2">
-                <span>Total TTC</span><span>{formatEur(montantTTC)}</span>
+                <span>Total {isFranchise ? 'HT' : 'TTC'}</span><span>{formatEur(montantTTC)}</span>
               </div>
               {parseInt(form.acompte_pct) > 0 && (
                 <div className="border-t pt-2 mt-1 space-y-1">

@@ -39,7 +39,7 @@ function InfoRow({ label, value }) {
 export default function DevisDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { isComplete: profilComplet, missing: profilMissing } = useProfil()
+  const { isComplete: profilComplet, missing: profilMissing, isFranchise } = useProfil()
 
   const [devis, setDevis]           = useState(null)
   const [loading, setLoading]       = useState(true)
@@ -167,7 +167,6 @@ export default function DevisDetail() {
   const ttc         = devis.montant_ttc  || 0
   const tva         = devis.tva          || 0
   const acomptePct  = devis.acompte_pct  || 0
-  const isFranchise = tva === 0
   const montantTVA  = ttc - ht
   const acompteTTC  = acomptePct > 0 ? ttc * acomptePct / 100 : 0
   const soldeTTC    = acomptePct > 0 ? ttc - acompteTTC : 0

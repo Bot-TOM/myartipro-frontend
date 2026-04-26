@@ -242,7 +242,8 @@ export default function DevisPublic() {
           const montantTVA = ttc - ht
           const acompteTTC = acomptePct > 0 ? ttc * acomptePct / 100 : 0
           const soldeTTC   = acomptePct > 0 ? ttc - acompteTTC : 0
-          const isFranchise = tva === 0
+          // Utilise le régime fiscal de l'artisan (transmis par l'API) — plus fiable que tva===0 en base
+          const isFranchise = paiement.is_franchise ?? (tva === 0)
 
           return (
             <div className="bg-white rounded-xl border p-4 space-y-2">
