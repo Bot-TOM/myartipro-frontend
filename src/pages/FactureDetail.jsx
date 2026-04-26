@@ -144,6 +144,9 @@ export default function FactureDetail() {
   const tva           = facture.tva         || 0
   const isFranchise   = tva === 0
   const montantTVA    = ttc - ht
+  const acomptePct    = facture.acompte_pct || 0
+  const acompteTTC    = acomptePct > 0 ? ttc * acomptePct / 100 : 0
+  const netAPayer     = acomptePct > 0 ? ttc - acompteTTC : ttc
   const relancesCount = facture.relances_count || 0
 
   const PALIER_LABELS = { 0: '1er rappel', 1: '2e rappel', 2: 'Mise en demeure' }
@@ -227,6 +230,18 @@ export default function FactureDetail() {
             <span className="text-base font-bold text-slate-900">Total {isFranchise ? 'HT' : 'TTC'}</span>
             <span className="text-xl font-extrabold text-primary-600">{formatEur(ttc)}</span>
           </div>
+          {acomptePct > 0 && (
+            <>
+              <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                <span className="text-sm text-slate-500">Acompte versé ({acomptePct}%)</span>
+                <span className="text-sm font-medium text-orange-600">−{formatEur(acompteTTC)}</span>
+              </div>
+              <div className="flex items-center justify-between pt-1 border-t border-slate-200">
+                <span className="text-base font-bold text-slate-900">Net à payer</span>
+                <span className="text-xl font-extrabold text-emerald-600">{formatEur(netAPayer)}</span>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Dates */}
