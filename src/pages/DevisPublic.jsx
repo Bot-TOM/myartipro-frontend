@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import axios from 'axios'
 import { API_URL } from '../lib/api'
@@ -9,8 +9,19 @@ export default function DevisPublic() {
   const [statut, setStatut] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [action, setAction] = useState(null) // 'accepter' | 'refuser'
   const [done, setDone] = useState(false)
+
+  // Signature state
+  const [showSignature, setShowSignature] = useState(false)
+  const [signedName, setSignedName] = useState('')
+  const [hasAgreed, setHasAgreed] = useState(false)
+  const [isEmpty, setIsEmpty] = useState(true)
+  const [signing, setSigning] = useState(false)
+  const [refusing, setRefusing] = useState(false)
+
+  const canvasRef = useRef(null)
+  const signatureRef = useRef(null)
+  const isDrawingRef = useRef(false)
 
   useEffect(() => {
     const load = async () => {
@@ -18,6 +29,8 @@ export default function DevisPublic() {
         const res = await axios.get(`${API_URL}/devis/public/${token}`)
         setDevis(res.data)
         setStatut(res.data.statut)
+        const c = res.data.clients || {}
+        setSignedName(`${c.prenom || ''} ${c.nom || ''}`.trim())
       } catch {
         setError('Ce lien est invalide ou a expiré.')
       }
@@ -26,15 +39,92 @@ export default function DevisPublic() {
     load()
   }, [token])
 
-  const handleAction = async (type) => {
-    setAction(type)
+  // Init canvas after DOM paint — useLayoutEffect garantit les dimensions correctes
+  useLayoutEffect(() => {
+    if (!showSignature) return
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const dpr = window.devicePixelRatio || 1
+    const w = canvas.offsetWidth
+    const h = canvas.offsetHeight
+    if (!w || !h) return
+    canvas.width = w * dpr
+    canvas.height = h * dpr
+    const ctx = canvas.getContext('2d')
+    ctx.scale(dpr, dpr)
+    ctx.strokeStyle = '#1e3a8a'
+    ctx.lineWidth = 2.5
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+    setIsEmpty(true)
+    // Scroll vers le formulaire de signature
+    setTimeout(() => signatureRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+  }, [showSignature])
+
+  const getPos = (e) => {
+    const canvas = canvasRef.current
+    const rect = canvas.getBoundingClientRect()
+    const source = e.touches ? e.touches[0] : e
+    return { x: source.clientX - rect.left, y: source.clientY - rect.top }
+  }
+
+  const startDraw = (e) => {
+    e.preventDefault()
+    isDrawingRef.current = true
+    const ctx = canvasRef.current?.getContext('2d')
+    if (!ctx) return
+    const pos = getPos(e)
+    ctx.beginPath()
+    ctx.moveTo(pos.x, pos.y)
+  }
+
+  const draw = (e) => {
+    e.preventDefault()
+    if (!isDrawingRef.current) return
+    const ctx = canvasRef.current?.getContext('2d')
+    if (!ctx) return
+    const pos = getPos(e)
+    ctx.lineTo(pos.x, pos.y)
+    ctx.stroke()
+    if (isEmpty) setIsEmpty(false)
+  }
+
+  const endDraw = () => { isDrawingRef.current = false }
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    setIsEmpty(true)
+  }
+
+  const handleAccepter = async () => {
+    const canvas = canvasRef.current
+    if (!canvas || isEmpty || !signedName.trim() || !hasAgreed) return
+    setSigning(true)
     try {
-      await axios.post(`${API_URL}/devis/public/${token}/${type}`)
-      setStatut(type === 'accepter' ? 'accepté' : 'refusé')
+      await axios.post(`${API_URL}/devis/public/${token}/accepter`, {
+        signature_data: canvas.toDataURL('image/png'),
+        signed_name: signedName.trim(),
+      })
+      setStatut('accepté')
       setDone(true)
     } catch (err) {
       setError(err.response?.data?.detail || 'Une erreur est survenue.')
-      setAction(null)
+      setSigning(false)
+    }
+  }
+
+  const handleRefuser = async () => {
+    setRefusing(true)
+    try {
+      await axios.post(`${API_URL}/devis/public/${token}/refuser`)
+      setStatut('refusé')
+      setDone(true)
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Une erreur est survenue.')
+      setRefusing(false)
     }
   }
 
@@ -90,7 +180,7 @@ export default function DevisPublic() {
           <div className={`rounded-xl p-4 text-center font-semibold text-lg ${
             statut === 'accepté' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
           }`}>
-            {statut === 'accepté' ? '✅ Vous avez accepté ce devis.' : '❌ Vous avez refusé ce devis.'}
+            {statut === 'accepté' ? '✅ Vous avez accepté et signé ce devis.' : '❌ Vous avez refusé ce devis.'}
           </div>
         )}
 
@@ -170,21 +260,106 @@ export default function DevisPublic() {
         {/* Boutons d'action */}
         {!done && !deja_traite && (
           <div className="space-y-3 pt-2">
-            <p className="text-center text-sm text-gray-500">Donnez votre réponse :</p>
-            <button
-              onClick={() => handleAction('accepter')}
-              disabled={action !== null}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-4 rounded-xl text-lg transition disabled:opacity-50"
-            >
-              {action === 'accepter' ? 'Envoi...' : '✅ Accepter le devis'}
-            </button>
-            <button
-              onClick={() => handleAction('refuser')}
-              disabled={action !== null}
-              className="w-full bg-white border-2 border-red-300 hover:bg-red-50 text-red-600 font-semibold py-4 rounded-xl text-lg transition disabled:opacity-50"
-            >
-              {action === 'refuser' ? 'Envoi...' : '❌ Refuser le devis'}
-            </button>
+            {!showSignature ? (
+              <>
+                <p className="text-center text-sm text-gray-500">Donnez votre réponse :</p>
+                <button
+                  onClick={() => setShowSignature(true)}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-4 rounded-xl text-lg transition"
+                >
+                  ✅ Accepter le devis
+                </button>
+                <button
+                  onClick={handleRefuser}
+                  disabled={refusing}
+                  className="w-full bg-white border-2 border-red-300 hover:bg-red-50 text-red-600 font-semibold py-4 rounded-xl text-lg transition disabled:opacity-50"
+                >
+                  {refusing ? 'Envoi...' : '❌ Refuser le devis'}
+                </button>
+              </>
+            ) : (
+              <div ref={signatureRef} className="bg-white rounded-xl border p-5 space-y-5">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-gray-800">Signature électronique</h3>
+                  <button
+                    onClick={() => { setShowSignature(false); setHasAgreed(false) }}
+                    className="text-sm text-gray-400 hover:text-gray-600"
+                  >
+                    Annuler
+                  </button>
+                </div>
+
+                {/* Canvas */}
+                <div>
+                  <p className="text-xs text-gray-500 mb-2">Dessinez votre signature :</p>
+                  <div className="relative rounded-lg border-2 border-gray-200 bg-gray-50" style={{ height: 140 }}>
+                    <canvas
+                      ref={canvasRef}
+                      className="w-full h-full rounded-lg cursor-crosshair touch-none"
+                      onMouseDown={startDraw}
+                      onMouseMove={draw}
+                      onMouseUp={endDraw}
+                      onMouseLeave={endDraw}
+                      onTouchStart={startDraw}
+                      onTouchMove={draw}
+                      onTouchEnd={endDraw}
+                    />
+                    {isEmpty && (
+                      <p className="absolute inset-0 flex items-center justify-center text-gray-300 text-sm pointer-events-none select-none">
+                        Signez ici avec votre doigt ou la souris
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={clearCanvas}
+                    className="text-xs text-gray-400 hover:text-gray-600 mt-1.5 underline"
+                  >
+                    Effacer
+                  </button>
+                </div>
+
+                {/* Nom */}
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1.5">Nom et prénom</label>
+                  <input
+                    type="text"
+                    value={signedName}
+                    onChange={(e) => setSignedName(e.target.value)}
+                    placeholder="Votre nom complet"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+
+                {/* Consentement */}
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={hasAgreed}
+                    onChange={(e) => setHasAgreed(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 accent-green-600 flex-shrink-0"
+                  />
+                  <span className="text-sm text-gray-600 leading-snug">
+                    J'ai lu et j'accepte ce devis. Je reconnais que cette signature électronique a la même valeur légale qu'une signature manuscrite.
+                  </span>
+                </label>
+
+                {error && (
+                  <p className="text-sm text-red-500">{error}</p>
+                )}
+
+                <button
+                  onClick={handleAccepter}
+                  disabled={!canvasRef.current || isEmpty || !signedName.trim() || !hasAgreed || signing}
+                  className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl text-lg transition"
+                >
+                  {signing ? 'Envoi en cours...' : '✅ Signer et accepter'}
+                </button>
+
+                <p className="text-center text-xs text-gray-400">
+                  Signature électronique simple conforme au règlement eIDAS (UE) n° 910/2014
+                </p>
+              </div>
+            )}
           </div>
         )}
 
@@ -195,7 +370,7 @@ export default function DevisPublic() {
               : 'bg-red-50 text-red-700 border border-red-200'
           }`}>
             {statut === 'accepté' || statut === 'facturé'
-              ? '✅ Ce devis a été accepté.'
+              ? '✅ Ce devis a été accepté et signé.'
               : '❌ Ce devis a été refusé.'}
           </div>
         )}
