@@ -136,7 +136,7 @@ export default function EditDevis() {
         quantite: parseFloat(p.quantite) || 1,
         prix_unitaire: parseFloat(p.prix_unitaire) || 0,
       })),
-      tva: parseFloat(form.tva) || 20,
+      tva: form.tva === '' || form.tva === null || form.tva === undefined ? 20 : parseFloat(form.tva),
       acompte_pct: parseInt(form.acompte_pct) || 0,
       date_validite: form.date_validite || null,
       notes: form.notes || null,

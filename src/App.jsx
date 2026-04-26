@@ -13,6 +13,7 @@ import EditDevis from './pages/EditDevis'
 import DevisDetail from './pages/DevisDetail'
 import Clients from './pages/Clients'
 import Factures from './pages/Factures'
+import FactureDetail from './pages/FactureDetail'
 import ClientDetail from './pages/ClientDetail'
 import Rappels from './pages/Rappels'
 import Profil from './pages/Profil'
@@ -58,6 +59,7 @@ function App() {
         <Route path="/clients" element={<Clients />} />
         <Route path="/clients/:id" element={<ClientDetail />} />
         <Route path="/factures" element={<Factures />} />
+        <Route path="/factures/:id" element={<FactureDetail />} />
         <Route path="/rappels" element={<Rappels />} />
         <Route path="/profil" element={<Profil />} />
         <Route path="/mentions-legales" element={<MentionsLegales />} />

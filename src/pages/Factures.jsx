@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import useAuth from '../lib/useAuth'
 import Layout from '../components/Layout'
 import StatusBadge from '../components/StatusBadge'
@@ -7,13 +7,12 @@ import api from '../lib/api'
 import { downloadPdf } from '../lib/downloadPdf'
 import { shareLink } from '../lib/shareLink'
 import { toastApiError } from '../lib/toastApiError'
-import { exportFacturesCsv } from '../lib/exportCsv'
 import { SkeletonCardList, SkeletonTableRow } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
 import toast from 'react-hot-toast'
 import {
-  Download, Trash2, CheckCircle, CreditCard, Copy,
-  FileSpreadsheet, Receipt,
+  Download, Trash2, CheckCircle, CreditCard,
+  FileSpreadsheet, Receipt, FileDown,
 } from 'lucide-react'
 
 const MOIS_LABELS = [
@@ -46,13 +45,17 @@ function clientNom(f) {
 export default function Factures() {
   const { user } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
 
   const [factures, setFactures]     = useState([])
   const [loading, setLoading]       = useState(true)
   const [filter, setFilter]         = useState('tous')
-  const [exportMois, setExportMois] = useState(new Date().getMonth() + 1)
+  const [exportMois, setExportMois]   = useState(new Date().getMonth() + 1)
   const [exportAnnee, setExportAnnee] = useState(new Date().getFullYear())
-  const [exporting, setExporting]   = useState(false)
+  const [exporting, setExporting]     = useState(false)
+  const [exportingPdf, setExportingPdf] = useState(false)
+  const [markingPaidId, setMarkingPaidId] = useState(null)
+  const [markingMode, setMarkingMode]     = useState('virement')
 
   useEffect(() => {
     if (user) loadFactures()
@@ -70,17 +73,25 @@ export default function Factures() {
     }
   }
 
-  function handleExportCSV() {
+  async function handleExportCSV() {
     setExporting(true)
     try {
-      const { count } = exportFacturesCsv(factures, exportMois, exportAnnee)
-      if (count === 0) {
-        toast(`Aucune facture en ${MOIS_LABELS[exportMois - 1]} ${exportAnnee}`, { icon: 'ℹ️' })
+      const res = await api.get('/factures/export/csv', {
+        params: { mois: exportMois, annee: exportAnnee },
+        responseType: 'blob',
+      })
+      const mm = String(exportMois).padStart(2, '0')
+      const filename = `bilan_${exportAnnee}-${mm}.csv`
+      const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8;' })
+      const file = new File([blob], filename, { type: 'text/csv' })
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: filename }).catch(() => triggerBlobDownload(blob, filename))
       } else {
-        toast.success(`${count} facture${count > 1 ? 's' : ''} exportée${count > 1 ? 's' : ''}`)
+        triggerBlobDownload(blob, filename)
       }
+      toast.success('Bilan exporté')
     } catch {
-      toast.error('Erreur lors de l\'export')
+      toast.error("Erreur lors de l'export")
     } finally {
       setExporting(false)
     }
@@ -90,17 +101,54 @@ export default function Factures() {
     await downloadPdf(`/pdf/facture/${factureId}`, `${numero || 'facture'}.pdf`)
   }
 
-  async function handleMarquerPayee(factureId) {
+  async function handleMarquerPayee(factureId, mode) {
     try {
       await api.put(`/factures/${factureId}`, {
         statut: 'payée',
         date_paiement: new Date().toISOString(),
+        mode_paiement: mode,
       })
       toast.success('Facture marquée comme payée')
+      setMarkingPaidId(null)
       loadFactures()
     } catch (err) {
       toastApiError(err, 'Erreur lors de la mise à jour')
     }
+  }
+
+  async function handleExportPdf() {
+    setExportingPdf(true)
+    try {
+      const res = await api.get('/factures/export/pdf', {
+        params: { mois: exportMois, annee: exportAnnee },
+        responseType: 'blob',
+      })
+      const mm = String(exportMois).padStart(2, '0')
+      const filename = `livre_recettes_${exportAnnee}-${mm}.pdf`
+      const blob = new Blob([res.data], { type: 'application/pdf' })
+      const file = new File([blob], filename, { type: 'application/pdf' })
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: filename }).catch(() => triggerBlobDownload(blob, filename))
+      } else {
+        triggerBlobDownload(blob, filename)
+      }
+      toast.success('Livre des recettes généré')
+    } catch {
+      toast.error('Erreur lors de la génération du PDF')
+    } finally {
+      setExportingPdf(false)
+    }
+  }
+
+  function triggerBlobDownload(blob, filename) {
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    setTimeout(() => URL.revokeObjectURL(url), 10000)
   }
 
   async function handleDelete(facture) {
@@ -131,14 +179,6 @@ export default function Factures() {
     }
   }
 
-  function handleCopierLien(url) {
-    shareLink(url, {
-      title: 'Lien de paiement',
-      text: 'Voici le lien pour régler votre facture :',
-      successMsg: 'Lien copié',
-    })
-  }
-
   const filtered = filter === 'tous' ? factures : factures.filter((f) => f.statut === filter)
 
   const totalImpaye = factures
@@ -166,7 +206,7 @@ export default function Factures() {
         <div className="mb-5 bg-white rounded-2xl shadow-sm p-4 space-y-3">
           <p className="text-sm font-semibold text-slate-700 flex items-center gap-2">
             <FileSpreadsheet size={16} className="text-primary-600" />
-            Export comptable mensuel
+            Bilan comptable mensuel
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <select
@@ -193,11 +233,19 @@ export default function Factures() {
               className="flex items-center gap-2 text-sm text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50 px-4 py-2 rounded-xl transition font-medium"
             >
               <FileSpreadsheet size={16} />
-              {exporting ? 'Génération...' : 'Télécharger CSV'}
+              {exporting ? 'Génération...' : 'Bilan CSV'}
+            </button>
+            <button
+              onClick={handleExportPdf}
+              disabled={exportingPdf}
+              className="flex items-center gap-2 text-sm text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 px-4 py-2 rounded-xl transition font-medium"
+            >
+              <FileDown size={16} />
+              {exportingPdf ? 'Génération...' : 'Livre des recettes PDF'}
             </button>
           </div>
           <p className="text-xs text-slate-400">
-            Format CSV compatible Excel / LibreOffice · encodage UTF-8 BOM
+            Bilan CSV : journal + synthèse CA/TVA + encaissements · compatible Excel / Numbers
           </p>
         </div>
       )}
@@ -240,7 +288,11 @@ export default function Factures() {
           {/* Vue mobile */}
           <div className="space-y-3 md:hidden">
             {filtered.map((f) => (
-              <div key={f.id} className="bg-white rounded-2xl shadow-sm p-4">
+              <div
+                key={f.id}
+                onClick={() => navigate(`/factures/${f.id}`)}
+                className="bg-white rounded-2xl shadow-sm p-4 cursor-pointer active:scale-[0.99] transition-transform"
+              >
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <p className="font-mono text-xs text-slate-400">{f.numero}</p>
@@ -249,18 +301,30 @@ export default function Factures() {
                   </div>
                   <StatusBadge statut={f.statut} />
                 </div>
-                <div className="flex items-center justify-between mt-3">
+                <div
+                  className="flex items-center justify-between mt-3"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <p className="font-bold text-slate-900">{formatEur(f.montant_ttc)}</p>
                   <ActionButtons
                     f={f}
                     onPdf={() => handleDownloadPDF(f.id, f.numero)}
                     onPay={() => handleGenererLienPaiement(f.id)}
-                    onCopyLink={() => handleCopierLien(f.stripe_checkout_url)}
-                    onMarkPaid={() => handleMarquerPayee(f.id)}
+                    onMarkPaid={() => { setMarkingPaidId(f.id); setMarkingMode('virement') }}
                     onDelete={() => handleDelete(f)}
                     size={18}
                   />
                 </div>
+                {markingPaidId === f.id && (
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <ModePaiementPicker
+                      mode={markingMode}
+                      onMode={setMarkingMode}
+                      onConfirm={() => handleMarquerPayee(f.id, markingMode)}
+                      onCancel={() => setMarkingPaidId(null)}
+                    />
+                  </div>
+                )}
                 <p className="text-xs text-slate-400 mt-2">{formatDate(f.date_creation)}</p>
               </div>
             ))}
@@ -280,25 +344,36 @@ export default function Factures() {
               </thead>
               <tbody>
                 {filtered.map((f) => (
-                  <tr key={f.id} className="border-b last:border-0 hover:bg-slate-50 transition">
+                  <tr
+                    key={f.id}
+                    onClick={() => navigate(`/factures/${f.id}`)}
+                    className="border-b last:border-0 hover:bg-slate-50 transition cursor-pointer"
+                  >
                     <td className="px-5 py-4 text-sm font-mono text-slate-700">{f.numero}</td>
                     <td className="px-5 py-4 text-sm text-slate-700">{clientNom(f)}</td>
                     <td className="px-5 py-4 text-sm text-slate-700">{f.titre}</td>
                     <td className="px-5 py-4 text-sm font-semibold text-slate-900">{formatEur(f.montant_ttc)}</td>
                     <td className="px-5 py-4"><StatusBadge statut={f.statut} /></td>
                     <td className="px-5 py-4 text-sm text-slate-500">{formatDate(f.date_creation)}</td>
-                    <td className="px-5 py-4">
+                    <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end">
                         <ActionButtons
                           f={f}
                           onPdf={() => handleDownloadPDF(f.id, f.numero)}
                           onPay={() => handleGenererLienPaiement(f.id)}
-                          onCopyLink={() => handleCopierLien(f.stripe_checkout_url)}
-                          onMarkPaid={() => handleMarquerPayee(f.id)}
+                          onMarkPaid={() => { setMarkingPaidId(f.id); setMarkingMode('virement') }}
                           onDelete={() => handleDelete(f)}
                           size={16}
                         />
                       </div>
+                      {markingPaidId === f.id && (
+                        <ModePaiementPicker
+                          mode={markingMode}
+                          onMode={setMarkingMode}
+                          onConfirm={() => handleMarquerPayee(f.id, markingMode)}
+                          onCancel={() => setMarkingPaidId(null)}
+                        />
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -311,20 +386,15 @@ export default function Factures() {
   )
 }
 
-function ActionButtons({ f, onPdf, onPay, onCopyLink, onMarkPaid, onDelete, size }) {
+function ActionButtons({ f, onPdf, onPay, onMarkPaid, onDelete, size }) {
   return (
     <div className="flex items-center gap-1">
       <IconBtn onClick={onPdf} title="Télécharger PDF" hoverClass="hover:text-primary-600 hover:bg-primary-50">
         <Download size={size} />
       </IconBtn>
-      {f.statut === 'émise' && !f.stripe_checkout_url && (
+      {f.statut === 'émise' && (
         <IconBtn onClick={onPay} title="Générer lien de paiement" hoverClass="hover:text-violet-600 hover:bg-violet-50">
           <CreditCard size={size} />
-        </IconBtn>
-      )}
-      {f.statut === 'émise' && f.stripe_checkout_url && (
-        <IconBtn onClick={onCopyLink} title="Copier le lien de paiement" hoverClass="hover:text-violet-700 hover:bg-violet-50" activeClass="text-violet-500">
-          <Copy size={size} />
         </IconBtn>
       )}
       {f.statut === 'émise' && (
@@ -348,5 +418,49 @@ function IconBtn({ onClick, title, hoverClass, activeClass = 'text-slate-400', c
     >
       {children}
     </button>
+  )
+}
+
+const MODES = [
+  { value: 'virement',  label: 'Virement' },
+  { value: 'cheque',    label: 'Chèque' },
+  { value: 'especes',   label: 'Espèces' },
+  { value: 'carte',     label: 'Carte' },
+]
+
+function ModePaiementPicker({ mode, onMode, onConfirm, onCancel }) {
+  return (
+    <div className="mt-3 pt-3 border-t border-slate-100 space-y-2">
+      <p className="text-xs font-medium text-slate-500">Mode de règlement</p>
+      <div className="flex flex-wrap gap-2">
+        {MODES.map((m) => (
+          <button
+            key={m.value}
+            onClick={() => onMode(m.value)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
+              mode === m.value
+                ? 'bg-green-600 text-white border-green-600'
+                : 'bg-white text-slate-600 border-slate-200 hover:border-green-400'
+            }`}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
+      <div className="flex gap-2 pt-1">
+        <button
+          onClick={onConfirm}
+          className="flex-1 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold py-2 rounded-xl transition"
+        >
+          Confirmer
+        </button>
+        <button
+          onClick={onCancel}
+          className="px-4 py-2 text-sm text-slate-500 hover:text-slate-700 transition"
+        >
+          Annuler
+        </button>
+      </div>
+    </div>
   )
 }
